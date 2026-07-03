@@ -1,0 +1,6 @@
+{
+  "name": "Citizen Development Portal",
+  "description": "A multilingual AI-powered platform for citizens of India to submit development suggestions via voice, text, or photos, and track, map, and prioritize local development initiatives based on community demand, demographic needs, and local infrastructure gaps.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

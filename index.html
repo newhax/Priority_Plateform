@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+    <script>
+      (function() {
+        if (typeof window !== 'undefined') {
+          let customFetch = window.fetch;
+          const safeGlobal = new Proxy(window, {
+            get(target, prop, receiver) {
+              if (prop === 'fetch') {
+                return customFetch;
+              }
+              if (prop === 'global' || prop === 'globalThis' || prop === 'self') {
+                return safeGlobal;
+              }
+              const value = target[prop];
+              if (typeof value === 'function') {
+                return value.bind(target);
+              }
+              return value;
+            },
+            set(target, prop, value, receiver) {
+              if (prop === 'fetch') {
+                customFetch = value;
+                return true;
+              }
+              try {
+                target[prop] = value;
+              } catch (e) {
+                console.warn('Prevented overriding non-writable property: ' + String(prop), e);
+              }
+              return true;
+            }
+          });
+          try {
+            Object.defineProperty(window, 'global', {
+              value: safeGlobal,
+              writable: true,
+              configurable: true
+            });
+          } catch (e) {}
+          try {
+            Object.defineProperty(window, 'globalThis', {
+              value: safeGlobal,
+              writable: true,
+              configurable: true
+            });
+          } catch (e) {}
+          try {
+            Object.defineProperty(window, 'self', {
+              value: safeGlobal,
+              writable: true,
+              configurable: true
+            });
+          } catch (e) {}
+          try {
+            Object.defineProperty(window, 'fetch', {
+              get() { return customFetch; },
+              set(value) { customFetch = value; },
+              configurable: true
+            });
+          } catch (e) {}
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
