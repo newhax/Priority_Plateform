@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { WardData } from '../types';
 
-interface ConstituencyMapProps {
+interface CityMapProps {
   wards: WardData[];
   selectedWardId: string | null;
   onSelectWard: (wardId: string | null) => void;
   submissionCounts: Record<string, number>;
-  constituencyName: string;
+  cityName: string;
 }
 
 type HeatmapMetric = 'submissions' | 'schools' | 'clinics' | 'water';
 
-export const ConstituencyMap: React.FC<ConstituencyMapProps> = ({
+export const CityMap: React.FC<CityMapProps> = ({
   wards,
   selectedWardId,
   onSelectWard,
   submissionCounts,
-  constituencyName,
+  cityName,
 }) => {
   const [metric, setMetric] = useState<HeatmapMetric>('submissions');
 
@@ -126,7 +126,7 @@ export const ConstituencyMap: React.FC<ConstituencyMapProps> = ({
             Spatial Control Analysis Grid
           </h3>
           <p className="text-xs text-slate-400 font-sans mt-0.5">
-            {constituencyName} divisions. Tap sector to isolate local tactical matrix & demand quotients.
+            {cityName} divisions. Tap sector to isolate local tactical matrix & demand quotients.
           </p>
         </div>
         

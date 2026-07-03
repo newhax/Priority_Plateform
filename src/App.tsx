@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Submission, ProposedProject, WardData } from './types';
 import { translations, getTranslation } from './components/translations';
-import { ConstituencyMap } from './components/ConstituencyMap';
+import { CityMap } from './components/CityMap';
 import { WhatsAppPreview } from './components/WhatsAppPreview';
 import { PrioritySandbox } from './components/PrioritySandbox';
 import { ReportGenerator } from './components/ReportGenerator';
-import { INDIAN_STATES_CONSTITUENCIES, ALL_INDIAN_STATES } from './seedData';
+import { INDIAN_STATES_CITIES, ALL_INDIAN_STATES } from './seedData';
 import { AuthScreen } from './components/AuthScreen';
 import { LanguageGreetingModal } from './components/LanguageGreetingModal';
 import { 
@@ -38,8 +38,10 @@ export default function App() {
   const [lang, setLang] = useState<string>('en');
   const [showGreeting, setShowGreeting] = useState<boolean>(false);
   const [selectedState, setSelectedState] = useState<string>('Kerala');
-  const [selectedConstituency, setSelectedConstituency] = useState<string>('Thiruvananthapuram');
-  const [customConstituency, setCustomConstituency] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('Thiruvananthapuram');
+  const [formState, setFormState] = useState<string>('Kerala');
+  const [formCity, setFormCity] = useState<string>('Thiruvananthapuram');
+  const [customCity, setCustomCity] = useState<string>('');
   const [selectedWardId, setSelectedWardId] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [projects, setProjects] = useState<ProposedProject[]>([]);
@@ -50,6 +52,7 @@ export default function App() {
   // User Authentication State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showProfileCard, setShowProfileCard] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -67,6 +70,16 @@ export default function App() {
       }
     }
   }, []);
+
+  // Automatically update location based on user profile
+  useEffect(() => {
+    if (currentUser?.state) {
+      setSelectedState(currentUser.state);
+      if (currentUser.city) {
+        setSelectedCity(currentUser.city);
+      }
+    }
+  }, [currentUser?.state, currentUser?.city]);
 
   // Load saved language and welcome status on mount
   useEffect(() => {
@@ -105,18 +118,18 @@ export default function App() {
   const timerRef = useRef<any>(null);
 
   // Load submissions and projects from our Express API on mount or region change
-  const loadData = async (stateVal: string, constVal: string) => {
+  const loadData = async (stateVal: string, cityVal: string) => {
     try {
-      const subRes = await fetch(`/api/submissions?state=${encodeURIComponent(stateVal)}&constituency=${encodeURIComponent(constVal)}`);
+      const subRes = await fetch(`/api/submissions?state=${encodeURIComponent(stateVal)}&city=${encodeURIComponent(cityVal)}`);
       const subData = await subRes.json();
       if (subData.submissions) setSubmissions(subData.submissions);
 
-      const projRes = await fetch(`/api/projects?state=${encodeURIComponent(stateVal)}&constituency=${encodeURIComponent(constVal)}`);
+      const projRes = await fetch(`/api/projects?state=${encodeURIComponent(stateVal)}&city=${encodeURIComponent(cityVal)}`);
       const projData = await projRes.json();
       if (projData.projects) setProjects(projData.projects);
       if (projData.wards) {
         setWards(projData.wards);
-        // Default form ward to the first available ward of this constituency
+        // Default form ward to the first available ward of this city
         if (projData.wards.length > 0) {
           setFormWard(projData.wards[0].name);
         }
@@ -127,9 +140,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadData(selectedState, selectedConstituency);
+    loadData(selectedState, selectedCity);
     setSelectedWardId(null); // Clear map filter when changing region
-  }, [selectedState, selectedConstituency]);
+  }, [selectedState, selectedCity]);
 
   // Sync ward selections from the interactive map to the form dropdown
   const handleMapSelectWard = (wardId: string | null) => {
@@ -333,7 +346,7 @@ export default function App() {
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-xl font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                <h1 className="text-2xl md:text-3xl font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
                   {t.title}
                 </h1>
                 <span className="hidden sm:inline-block text-[9px] bg-cyan-950/50 text-cyan-400 px-2 py-0.5 border border-cyan-500/30 rounded-full font-mono font-bold uppercase tracking-wider animate-pulse">
@@ -354,12 +367,12 @@ export default function App() {
                     onChange={(e) => {
                       const nextState = e.target.value;
                       setSelectedState(nextState);
-                      // Auto-select the first constituency of the next state
-                      const match = INDIAN_STATES_CONSTITUENCIES.find(item => item.state === nextState);
-                      if (match && match.constituencies.length > 0) {
-                        setSelectedConstituency(match.constituencies[0]);
+                      // Auto-select the first city of the next state
+                      const match = INDIAN_STATES_CITIES.find(item => item.state === nextState);
+                      if (match && match.cities.length > 0) {
+                        setSelectedCity(match.cities[0]);
                       } else {
-                        setSelectedConstituency('Custom');
+                        setSelectedCity('Custom');
                       }
                     }}
                     className="bg-slate-950 text-slate-200 text-[11px] font-sans font-bold py-0.5 px-1.5 rounded border border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -370,23 +383,23 @@ export default function App() {
                   </select>
                 </div>
 
-                {/* Constituency dropdown */}
+                {/* City dropdown */}
                 <div className="flex items-center gap-1 border-l border-slate-800 pl-2.5">
-                  <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">Constituency:</span>
+                  <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">City:</span>
                   {(() => {
-                    const match = INDIAN_STATES_CONSTITUENCIES.find(item => item.state === selectedState);
-                    const list = match ? match.constituencies : [];
+                    const match = INDIAN_STATES_CITIES.find(item => item.state === selectedState);
+                    const list = match ? match.cities : [];
                     return (
                       <select
-                        id="constituency-select"
-                        value={list.includes(selectedConstituency) ? selectedConstituency : 'Custom'}
+                        id="city-select"
+                        value={list.includes(selectedCity) ? selectedCity : 'Custom'}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === 'Custom') {
-                            setSelectedConstituency('Custom');
-                            setCustomConstituency('');
+                            setSelectedCity('Custom');
+                            setCustomCity('');
                           } else {
-                            setSelectedConstituency(val);
+                            setSelectedCity(val);
                           }
                         }}
                         className="bg-slate-950 text-slate-200 text-[11px] font-sans font-bold py-0.5 px-1.5 rounded border border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -401,31 +414,31 @@ export default function App() {
                 </div>
 
                 {/* Custom input box if custom/other selected */}
-                {(selectedConstituency === 'Custom' || !INDIAN_STATES_CONSTITUENCIES.flatMap(item => item.constituencies).includes(selectedConstituency)) && (
+                {(selectedCity === 'Custom' || !INDIAN_STATES_CITIES.flatMap(item => item.cities).includes(selectedCity)) && (
                   <div className="flex items-center gap-1.5 border-l border-slate-800 pl-2.5">
                     <input
-                      id="custom-constituency-input"
+                      id="custom-city-input"
                       type="text"
-                      placeholder="Enter constituency..."
-                      value={customConstituency}
-                      onChange={(e) => setCustomConstituency(e.target.value)}
+                      placeholder="Enter city..."
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && customConstituency.trim()) {
-                          setSelectedConstituency(customConstituency.trim());
+                        if (e.key === 'Enter' && customCity.trim()) {
+                          setSelectedCity(customCity.trim());
                         }
                       }}
                       onBlur={() => {
-                        if (customConstituency.trim()) {
-                          setSelectedConstituency(customConstituency.trim());
+                        if (customCity.trim()) {
+                          setSelectedCity(customCity.trim());
                         }
                       }}
                       className="bg-slate-950 text-slate-200 text-[11px] font-sans py-0.5 px-2 rounded border border-cyan-500/30 focus:outline-none focus:border-cyan-400 placeholder:text-slate-600 max-w-[120px]"
                     />
                     <button
-                      id="save-custom-constituency-btn"
+                      id="save-custom-city-btn"
                       onClick={() => {
-                        if (customConstituency.trim()) {
-                          setSelectedConstituency(customConstituency.trim());
+                        if (customCity.trim()) {
+                          setSelectedCity(customCity.trim());
                         }
                       }}
                       className="px-1.5 py-0.5 text-[9px] bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded font-bold cursor-pointer font-sans"
@@ -448,52 +461,6 @@ export default function App() {
                 <span className="text-[10px] text-slate-500 block leading-none uppercase font-bold">Local Standard Time</span>
                 <span className="font-semibold">2026-07-03 00:20 UTC</span>
               </div>
-            </div>
-
-            {/* Language Selection bar */}
-            <div className="flex items-center gap-1 bg-slate-900/60 p-1 border border-slate-800 rounded-xl">
-              <Languages className="w-3.5 h-3.5 text-slate-500 ml-1.5" />
-              {[
-                { code: 'en', label: 'EN' },
-                { code: 'ml', label: 'മലയാളം' },
-                { code: 'hi', label: 'हिन्दी' },
-                { code: 'ta', label: 'தமிழ்' },
-                // Append custom selected language if not in the default quick toggle list
-                ...(!['en', 'ml', 'hi', 'ta'].includes(lang) ? [{
-                  code: lang,
-                  label: lang === 'bn' ? 'বাংলা' :
-                         lang === 'te' ? 'తెలుగు' :
-                         lang === 'mr' ? 'मराठी' :
-                         lang === 'gu' ? 'ગુજરાતી' :
-                         lang === 'kn' ? 'ಕನ್ನಡ' :
-                         lang === 'pa' ? 'ਪੰਜਾਬੀ' : lang.toUpperCase()
-                }] : [])
-              ].map((langObj) => (
-                <button
-                  key={langObj.code}
-                  id={`top-lang-btn-${langObj.code}`}
-                  onClick={() => setLang(langObj.code)}
-                  className={`px-2 py-1 text-[11px] font-sans font-bold rounded-lg transition-all cursor-pointer ${
-                    lang === langObj.code
-                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-850/60'
-                  }`}
-                >
-                  {langObj.label}
-                </button>
-              ))}
-
-              <div className="w-px h-4 bg-slate-800 mx-1" />
-
-              <button
-                id="header-change-language-globe-btn"
-                onClick={() => setShowGreeting(true)}
-                className="p-1 px-1.5 text-slate-400 hover:text-cyan-400 rounded-lg hover:bg-slate-850/40 transition-all cursor-pointer flex items-center gap-1 text-[10px] font-mono font-bold"
-                title="Select from 22 Indian Languages"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">ALL</span>
-              </button>
             </div>
 
             {/* User Profile Badge & Dropdown */}
@@ -524,44 +491,89 @@ export default function App() {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute right-0 mt-2.5 w-72 bg-[#09090b] border border-zinc-800/80 rounded-2xl p-4.5 shadow-2xl z-50 space-y-4 backdrop-blur-md"
                   >
-                    <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/60">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-sm text-white">
-                        {currentUser.firstName ? currentUser.firstName[0] : ''}{currentUser.lastName ? currentUser.lastName[0] : ''}
+                    <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-sm text-white">
+                          {currentUser.firstName ? currentUser.firstName[0] : ''}{currentUser.lastName ? currentUser.lastName[0] : ''}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-extrabold text-white">
+                            {currentUser.firstName} {currentUser.lastName}
+                          </h4>
+                          <span className="text-[10px] font-mono uppercase bg-cyan-950 border border-cyan-800/30 px-2 py-0.5 rounded text-cyan-400">
+                            {currentUser.isAdmin ? 'Member of Parliament' : 'Verified Citizen'}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-extrabold text-white">
-                          {currentUser.firstName} {currentUser.lastName}
-                        </h4>
-                        <span className="text-[10px] font-mono uppercase bg-cyan-950 border border-cyan-800/30 px-2 py-0.5 rounded text-cyan-400">
-                          {currentUser.isAdmin ? 'Member of Parliament' : 'Verified Citizen'}
-                        </span>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (isEditing) {
+                            localStorage.setItem('mp_portal_current_user', JSON.stringify(currentUser));
+                          }
+                          setIsEditing(!isEditing);
+                        }}
+                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300"
+                      >
+                        {isEditing ? 'Save' : 'Edit'}
+                      </button>
                     </div>
 
                     <div className="space-y-2.5 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Email:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.email}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Phone:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.phone}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Gender:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.gender}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">DOB:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.dob}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">State:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.state}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">City:</span>
-                        <span className="text-slate-300 font-semibold">{currentUser.city}</span>
+                      {[
+                        { label: 'Email', key: 'email' },
+                        { label: 'Phone', key: 'phone' },
+                        { label: 'Gender', key: 'gender' },
+                        { label: 'DOB', key: 'dob' },
+                        { label: 'State', key: 'state' },
+                        { label: 'City', key: 'city' },
+                      ].map(field => (
+                        <div key={field.key} className="flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">{field.label}:</span>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={currentUser[field.key]}
+                              onChange={(e) => setCurrentUser({...currentUser, [field.key]: e.target.value})}
+                              className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200"
+                            />
+                          ) : (
+                            <span className="text-slate-300 font-semibold">{currentUser[field.key]}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-zinc-800/60">
+                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Language</div>
+                      <div className="flex items-center gap-1 bg-slate-900/60 p-1 border border-slate-800 rounded-xl">
+                        <Languages className="w-3.5 h-3.5 text-slate-500 ml-1.5" />
+                        {[
+                          { code: 'en', label: 'EN' },
+                          { code: 'ml', label: 'മലയാളം' },
+                          { code: 'hi', label: 'हिन्दी' },
+                          { code: 'ta', label: 'தமிழ்' },
+                          ...(!['en', 'ml', 'hi', 'ta'].includes(lang) ? [{
+                            code: lang,
+                            label: lang === 'bn' ? 'বাংলা' :
+                                   lang === 'te' ? 'తెలుగు' :
+                                   lang === 'mr' ? 'मराठी' :
+                                   lang === 'gu' ? 'ગુજરાતી' :
+                                   lang === 'kn' ? 'ಕನ್ನಡ' :
+                                   lang === 'pa' ? 'ਪੰਜਾਬੀ' : lang.toUpperCase()
+                          }] : [])
+                        ].map((langObj) => (
+                          <button
+                            key={langObj.code}
+                            onClick={() => setLang(langObj.code)}
+                            className={`px-2 py-1 text-[11px] font-sans font-bold rounded-lg transition-all cursor-pointer ${
+                              lang === langObj.code
+                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white'
+                                : 'text-slate-400 hover:text-cyan-400'
+                            }`}
+                          >
+                            {langObj.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -576,6 +588,7 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
+
 
           </div>
         </div>
@@ -729,6 +742,47 @@ export default function App() {
                         placeholder="e.g., +91 94471 XXXXX"
                         className="w-full text-xs bg-slate-950/60 border border-slate-800 focus:border-cyan-500/50 rounded-xl p-3 text-slate-100 placeholder-slate-655 focus:outline-none"
                       />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                        <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                        State & City
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={formState}
+                          onChange={(e) => {
+                            const nextState = e.target.value;
+                            setFormState(nextState);
+                            const match = INDIAN_STATES_CITIES.find(item => item.state === nextState);
+                            if (match && match.cities.length > 0) {
+                              setFormCity(match.cities[0]);
+                            } else {
+                              setFormCity('Custom');
+                            }
+                          }}
+                          className="w-full text-xs bg-slate-950/60 border border-slate-800 focus:border-cyan-500/50 rounded-xl p-3 text-slate-100 focus:outline-none cursor-pointer"
+                        >
+                          {ALL_INDIAN_STATES.map(state => (
+                            <option key={state} value={state} className="bg-slate-955 text-slate-100">
+                              {state}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={formCity}
+                          onChange={(e) => setFormCity(e.target.value)}
+                          className="w-full text-xs bg-slate-950/60 border border-slate-800 focus:border-cyan-500/50 rounded-xl p-3 text-slate-100 focus:outline-none cursor-pointer"
+                        >
+                          {(INDIAN_STATES_CITIES.find(item => item.state === formState)?.cities || []).map(city => (
+                            <option key={city} value={city} className="bg-slate-955 text-slate-100">
+                              {city}
+                            </option>
+                          ))}
+                          <option value="Custom">Custom</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -991,12 +1045,12 @@ export default function App() {
               className="space-y-6"
             >
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1 shadow-2xl">
-                <ConstituencyMap
+                <CityMap
                   wards={wards}
                   selectedWardId={selectedWardId}
                   onSelectWard={handleMapSelectWard}
                   submissionCounts={getSubmissionCounts()}
-                  constituencyName={selectedConstituency}
+                  cityName={selectedCity}
                 />
               </div>
 
@@ -1007,7 +1061,7 @@ export default function App() {
                     Interactive Spatial Analysis Grid
                   </h4>
                   <p className="text-xs text-slate-400 leading-relaxed max-w-2xl font-sans">
-                    Each polygon represents a critical local division within {selectedConstituency}. Use the heatmap metric switcher on the map to filter division density by submissions, schools, healthcare clinics, or water pipeline conditions. Click on any sector to filter suggestions and target focal zones.
+                    Each polygon represents a critical local division within {selectedCity}. Use the heatmap metric switcher on the map to filter division density by submissions, schools, healthcare clinics, or water pipeline conditions. Click on any sector to filter suggestions and target focal zones.
                   </p>
                 </div>
                 {selectedWardId ? (

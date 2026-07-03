@@ -352,83 +352,83 @@ export const INITIAL_PROJECTS: ProposedProject[] = [
   }
 ];
 
-export interface StateConstituencyMap {
+export interface StateCityMap {
   state: string;
-  constituencies: string[];
+  cities: string[];
 }
 
-export const INDIAN_STATES_CONSTITUENCIES: StateConstituencyMap[] = [
+export const INDIAN_STATES_CITIES: StateCityMap[] = [
   {
     state: 'Kerala',
-    constituencies: ['Thiruvananthapuram', 'Ernakulam', 'Kozhikode', 'Wayanad']
+    cities: ['Thiruvananthapuram', 'Ernakulam', 'Kozhikode', 'Wayanad']
   },
   {
     state: 'Delhi',
-    constituencies: ['New Delhi', 'East Delhi', 'Chandni Chowk']
+    cities: ['New Delhi', 'East Delhi', 'Chandni Chowk']
   },
   {
     state: 'Maharashtra',
-    constituencies: ['Mumbai South', 'Pune', 'Nagpur']
+    cities: ['Mumbai South', 'Pune', 'Nagpur']
   },
   {
     state: 'Karnataka',
-    constituencies: ['Bangalore South', 'Mysuru', 'Hubli-Dharwad']
+    cities: ['Bangalore South', 'Mysuru', 'Hubli-Dharwad']
   },
   {
     state: 'Tamil Nadu',
-    constituencies: ['Chennai South', 'Coimbatore', 'Madurai']
+    cities: ['Chennai South', 'Coimbatore', 'Madurai']
   },
   {
     state: 'Uttar Pradesh',
-    constituencies: ['Lucknow', 'Varanasi', 'Amethi']
+    cities: ['Lucknow', 'Varanasi', 'Amethi']
   },
   {
     state: 'Andhra Pradesh',
-    constituencies: ['Visakhapatnam', 'Vijayawada', 'Tirupati']
+    cities: ['Visakhapatnam', 'Vijayawada', 'Tirupati']
   },
   {
     state: 'Gujarat',
-    constituencies: ['Ahmedabad West', 'Surat', 'Vadodara']
+    cities: ['Ahmedabad West', 'Surat', 'Vadodara']
   },
   {
     state: 'Rajasthan',
-    constituencies: ['Jaipur', 'Jodhpur', 'Udaipur']
+    cities: ['Jaipur', 'Jodhpur', 'Udaipur']
   },
   {
     state: 'West Bengal',
-    constituencies: ['Kolkata South', 'Darjeeling', 'Asansol']
+    cities: ['Kolkata South', 'Darjeeling', 'Asansol']
   },
   {
     state: 'Punjab',
-    constituencies: ['Amritsar', 'Ludhiana', 'Patiala']
+    cities: ['Amritsar', 'Ludhiana', 'Patiala']
   },
   {
     state: 'Haryana',
-    constituencies: ['Gurugram', 'Faridabad', 'Ambala']
+    cities: ['Gurugram', 'Faridabad', 'Ambala']
   },
   {
     state: 'Telangana',
-    constituencies: ['Hyderabad', 'Secunderabad', 'Warangal']
+    cities: ['Hyderabad', 'Secunderabad', 'Warangal']
   },
   {
     state: 'Madhya Pradesh',
-    constituencies: ['Bhopal', 'Indore', 'Gwalior']
+    cities: ['Bhopal', 'Indore', 'Gwalior']
   },
   {
     state: 'Bihar',
-    constituencies: ['Patna Sahib', 'Gaya', 'Bhagalpur']
+    cities: ['Patna Sahib', 'Gaya', 'Bhagalpur']
   },
   {
     state: 'Assam',
-    constituencies: ['Guwahati', 'Dibrugarh', 'Silchar']
+    cities: ['Guwahati', 'Dibrugarh', 'Silchar']
   },
   {
     state: 'Odisha',
-    constituencies: ['Bhubaneswar', 'Cuttack', 'Puri']
+    cities: ['Bhubaneswar', 'Cuttack', 'Puri']
   },
   {
     state: 'Jammu & Kashmir',
-    constituencies: ['Srinagar', 'Jammu', 'Anantnag']
+    cities: ['Srinagar', 'Jammu', 'Anantnag']
   }
 ];
 
