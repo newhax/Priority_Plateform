@@ -36,7 +36,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
 
   // In-memory state partitioned by "State:Constituency"
   const constituencyStore: Record<string, {
@@ -610,6 +610,75 @@ Sincerely,
     }
 
     res.json({ report: fallbackReport, isMock: !ai });
+  });
+
+  // --- API ROUTE: POST Generate AI Proposal ---
+  app.post("/api/generate-proposal", async (req, res) => {
+    const { state, city, ward, problemText, language, photoData, voiceData, currentUser } = req.body;
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      return res.status(500).json({ error: "AI service unavailable" });
+    }
+
+    try {
+      const promptParts: any[] = [
+        {
+          text: `You are a professional legislative executive assistant.
+      
+      The user is submitting a civic proposal. 
+      - State: ${state}
+      - City/Constituency: ${city}
+      - Ward: ${ward}
+      - Problem Description: ${problemText}
+      - Language: ${language}
+      - User provided additional media: Photo: ${photoData ? 'Yes' : 'No'}, Voice Note: ${voiceData ? 'Yes' : 'No'}
+      ${currentUser ? `- User Details: Name: ${currentUser.firstName} ${currentUser.lastName}, Phone: ${currentUser.phone}` : ''}
+
+      Analyze the provided text, photo, and voice (if available) and generate a formal, comprehensive proposal addressed to the MP of ${city} regarding this problem.
+      
+      If user details are provided, include them in the proposal (e.g. as the signatory or contact person).
+
+      The proposal should:
+      - Be addressed formally to the MP.
+      - Describe the problem clearly based on the multimodal inputs.
+      - Propose actionable solutions.
+      - Urge for a solution.
+      - Use a respectful, professional, bureaucratic tone.
+      - Use the requested language: ${language}.
+
+      Return the proposal in a structured, nice markdown format.`
+        }
+      ];
+
+      if (photoData) {
+        promptParts.push({
+          inlineData: {
+            data: photoData.split(',')[1],
+            mimeType: photoData.split(',')[0].split(':')[1].split(';')[0]
+          }
+        });
+      }
+
+      if (voiceData) {
+        promptParts.push({
+          inlineData: {
+            data: voiceData.split(',')[1],
+            mimeType: voiceData.split(',')[0].split(':')[1].split(';')[0]
+          }
+        });
+      }
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: [{ role: 'user', parts: promptParts }],
+      });
+
+      res.json({ proposal: response.text });
+    } catch (err) {
+      console.error("Proposal generation failed:", err);
+      res.status(500).json({ error: "Failed to generate proposal" });
+    }
   });
 
   // --- API ROUTES: AUTHENTICATION ---

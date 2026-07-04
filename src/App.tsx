@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Submission, ProposedProject, WardData } from './types';
 import { translations, getTranslation } from './components/translations';
-import { CityMap } from './components/CityMap';
+import { GoogleMapComponent } from './components/GoogleMapComponent';
 import { WhatsAppPreview } from './components/WhatsAppPreview';
-import { PrioritySandbox } from './components/PrioritySandbox';
 import { ReportGenerator } from './components/ReportGenerator';
+import { PrioritySandbox } from './components/PrioritySandbox';
+import { AIProposalDesk } from './components/AIProposalDesk';
 import { INDIAN_STATES_CITIES, ALL_INDIAN_STATES } from './seedData';
 import { AuthScreen } from './components/AuthScreen';
 import { LanguageGreetingModal } from './components/LanguageGreetingModal';
@@ -47,7 +48,7 @@ export default function App() {
   const [projects, setProjects] = useState<ProposedProject[]>([]);
   const [wards, setWards] = useState<WardData[]>([]);
   const [selectedProjectForReport, setSelectedProjectForReport] = useState<ProposedProject | null>(null);
-  const [activeTab, setActiveTab] = useState<'intake' | 'map' | 'sandbox' | 'proposals' | 'feed'>('intake');
+  const [activeTab, setActiveTab] = useState<'intake' | 'map' | 'proposals' | 'feed'>('intake');
 
   // User Authentication State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -106,6 +107,8 @@ export default function App() {
   const [formText, setFormText] = useState('');
   const [formInputType, setFormInputType] = useState<Submission['inputType']>('text');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
+  const [generatingLetter, setGeneratingLetter] = useState(false);
 
   // Interactive States
   const [submitting, setSubmitting] = useState(false);
@@ -207,6 +210,34 @@ export default function App() {
     setFormWard(ward);
   };
 
+  // Generate Letter to MP
+  const handleGenerateLetter = async () => {
+    if (!formText.trim()) return;
+    setGeneratingLetter(true);
+    try {
+      const response = await fetch('/api/generate-mp-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: formState,
+          city: formCity,
+          ward: formWard,
+          problemText: formText,
+          language: lang
+        }),
+      });
+      const data = await response.json();
+      if (data.letter) {
+        setGeneratedLetter(data.letter);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to generate letter.");
+    } finally {
+      setGeneratingLetter(false);
+    }
+  };
+
   // Form Submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -230,7 +261,7 @@ export default function App() {
           photoUrl: formInputType === 'photo' ? (photoPreview || '/assets/pothole.jpg') : undefined,
           audioUrl: formInputType === 'voice' ? '#audio-waveform' : undefined,
           state: selectedState,
-          constituency: selectedConstituency
+          constituency: selectedCity
         }),
       });
 
@@ -245,7 +276,7 @@ export default function App() {
         setFormInputType('text');
 
         // Reload lists to show the new submission processed in real-time
-        await loadData(selectedState, selectedConstituency);
+        await loadData(selectedState, selectedCity);
       } else {
         setError("Error processing submission. Please try again.");
       }
@@ -648,7 +679,6 @@ export default function App() {
             {[
               { id: 'intake', label: 'Intake Hub', icon: Sparkles, count: null },
               { id: 'map', label: 'Spatial Map', icon: MapPin, count: null },
-              { id: 'sandbox', label: 'Priority Sandbox', icon: Grid, count: projects.length },
               { id: 'proposals', label: 'AI Proposal Desk', icon: FileText, count: selectedProjectForReport ? 'Active' : null },
               { id: 'feed', label: 'Live Dispatch Feed', icon: Inbox, count: totalSubmissions }
             ].map((tabItem) => {
@@ -1023,6 +1053,33 @@ export default function App() {
                         </>
                       )}
                     </button>
+
+                    <button
+                      type="button"
+                      id="btn-generate-letter"
+                      disabled={generatingLetter || !formText.trim()}
+                      onClick={handleGenerateLetter}
+                      className="w-full bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800 disabled:text-slate-500 border border-slate-700 text-slate-200 font-display font-bold text-xs py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {generatingLetter ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3.5 h-3.5 text-cyan-300" />
+                          Draft Letter to MP
+                        </>
+                      )}
+                    </button>
+
+                    {generatedLetter && (
+                      <div className="mt-6 p-5 bg-slate-950 border border-cyan-500/30 rounded-2xl text-slate-300 text-xs font-sans whitespace-pre-wrap leading-relaxed shadow-inner">
+                        <h3 className="font-bold text-cyan-400 mb-2">Drafted MP Letter</h3>
+                        {generatedLetter}
+                      </div>
+                    )}
                   </form>
                 </div>
               </div>
@@ -1045,12 +1102,12 @@ export default function App() {
               className="space-y-6"
             >
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1 shadow-2xl">
-                <CityMap
+                <GoogleMapComponent
+                  cityName={selectedCity}
                   wards={wards}
+                  submissions={submissions}
                   selectedWardId={selectedWardId}
                   onSelectWard={handleMapSelectWard}
-                  submissionCounts={getSubmissionCounts()}
-                  cityName={selectedCity}
                 />
               </div>
 
@@ -1119,57 +1176,15 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div id="ai-report-desk">
-                <ReportGenerator project={selectedProjectForReport} />
+              <div id="ai-proposal-desk">
+                <AIProposalDesk 
+                  state={formState}
+                  city={formCity}
+                  ward={formWard}
+                  language={lang}
+                  currentUser={currentUser}
+                />
               </div>
-
-              {!selectedProjectForReport && (
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 text-center space-y-4 max-w-3xl mx-auto">
-                  <div className="w-12 h-12 bg-cyan-950/50 border border-cyan-800/40 rounded-full flex items-center justify-center mx-auto text-cyan-400">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-slate-200">No Project Selected For Drafting</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed max-w-xl mx-auto">
-                      Legislative Proposals are compiled from approved citizen submissions. Please select an active project below to draft a formal proposal paper, or head to the <strong>Priority Sandbox</strong> tab to review recommendations.
-                    </p>
-                  </div>
-                  
-                  {projects.length > 0 ? (
-                    <div className="space-y-3 pt-3 text-left">
-                      <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider block text-center">
-                        Quick Select Formulated Project to Begin:
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {projects.map((p) => (
-                          <button
-                            key={p.id}
-                            id={`quick-report-select-${p.id}`}
-                            onClick={() => setSelectedProjectForReport(p)}
-                            className="p-3.5 text-left bg-slate-950 hover:bg-slate-900/80 border border-slate-850 hover:border-cyan-500/30 rounded-xl transition-all flex flex-col justify-between h-full cursor-pointer group"
-                          >
-                            <div>
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">{p.title}</span>
-                                <span className="text-[9px] bg-slate-900 text-cyan-400 px-1.5 py-0.5 rounded font-mono font-semibold">
-                                  {p.category}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-450 mt-1 line-clamp-1">{p.aiSummary}</p>
-                            </div>
-                            <div className="mt-3 text-[10px] font-mono text-slate-500 flex justify-between items-center w-full border-t border-slate-900/60 pt-2">
-                              <span>Ward: {p.ward}</span>
-                              <span className="text-cyan-400 group-hover:translate-x-0.5 transition-transform">Draft Proposal →</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic">No Formulation Projects found in this Region.</p>
-                  )}
-                </div>
-              )}
             </motion.div>
           )}
 
