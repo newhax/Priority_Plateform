@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ProposedProject, PrioritizationWeights } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Sliders, Layers, ArrowUp, ArrowDown, FileText, CheckCircle } from 'lucide-react';
+import { Sparkles, Sliders, Layers, ArrowUp, ArrowDown, FileText, CheckCircle, MapPin } from 'lucide-react';
+import { getDistance } from '../utils/geo';
 
 interface PrioritySandboxProps {
   projects: ProposedProject[];
   onSelectProjectForReport: (project: ProposedProject) => void;
   selectedProject: ProposedProject | null;
   language?: string;
+  liveUserCoords?: { lat: number; lng: number } | null;
 }
 
 const sandboxTranslations: Record<string, any> = {
@@ -186,6 +188,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
   onSelectProjectForReport,
   selectedProject,
   language = 'en',
+  liveUserCoords = null
 }) => {
   const t = sandboxTranslations[language] || sandboxTranslations['en'];
 
@@ -196,6 +199,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
     costEfficiency: 0.1,
   });
 
+  const [sortByProximity, setSortByProximity] = useState(false);
   const [sortedProjects, setSortedProjects] = useState<(ProposedProject & { score: number; rankChange: number })[]>([]);
 
   // Keep track of original ranks (sorted by demandIndex desc as baseline)
@@ -222,8 +226,17 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
       };
     });
 
-    // Sort by calculated score desc
-    const sorted = calculated.sort((a, b) => b.score - a.score);
+    // Sort by calculated score desc, or proximity if toggled
+    let sorted = [...calculated];
+    if (sortByProximity && liveUserCoords) {
+      sorted = calculated.sort((a, b) => {
+        const distA = a.latitude && a.longitude ? getDistance(liveUserCoords.lat, liveUserCoords.lng, a.latitude, a.longitude) : 9999;
+        const distB = b.latitude && b.longitude ? getDistance(liveUserCoords.lat, liveUserCoords.lng, b.latitude, b.longitude) : 9999;
+        return distA - distB;
+      });
+    } else {
+      sorted = calculated.sort((a, b) => b.score - a.score);
+    }
 
     // Calculate rank differences from baseline
     const finalSorted = sorted.map((proj, idx) => {
@@ -238,7 +251,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
     });
 
     setSortedProjects(finalSorted);
-  }, [weights, projects]);
+  }, [weights, projects, sortByProximity, liveUserCoords]);
 
   const handleWeightChange = (key: keyof PrioritizationWeights, value: number) => {
     // Normalize weights so they sum up to 1 approximately, or just update the raw ratio and normalize on fly
@@ -269,9 +282,24 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
             {t.subtitle}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1 rounded-full self-start font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
-          {t.coreActive}
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          {liveUserCoords && (
+            <button
+              onClick={() => setSortByProximity(!sortByProximity)}
+              className={`px-3 py-1 border text-[10px] font-bold rounded-full transition-all flex items-center gap-1 cursor-pointer select-none ${
+                sortByProximity
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 shadow-md shadow-emerald-950/20'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              }`}
+            >
+              <MapPin className="w-3 h-3 text-emerald-400" />
+              <span>{sortByProximity ? "Sorted: Near GPS First" : "Sort by Proximity"}</span>
+            </button>
+          )}
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+            {t.coreActive}
+          </div>
         </div>
       </div>
 
@@ -425,6 +453,12 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                         <span>{t.demandRank} <strong className="text-cyan-400 font-bold">{proj.demandIndex}/100</strong></span>
                         <span>{t.gapReduction} <strong className="text-slate-300">{proj.infrastructureBenefitScore}/100</strong></span>
                         <span>{t.estimatedCost} <strong className="text-yellow-500 font-bold">₹{proj.estimatedCost} {t.lakhs}</strong></span>
+                        {liveUserCoords && proj.latitude && proj.longitude && (
+                          <span className="text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-900/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-emerald-500 animate-pulse" />
+                            {getDistance(liveUserCoords.lat, liveUserCoords.lng, proj.latitude, proj.longitude).toFixed(1)} km away
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

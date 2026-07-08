@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
 import { Submission, ProposedProject } from './types';
 import { translations, getTranslation } from './components/translations';
 import { GoogleMapComponent } from './components/GoogleMapComponent';
@@ -36,7 +36,8 @@ import {
   Globe,
   Download,
   X,
-  Brain
+  Brain,
+  Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { APIProvider } from '@vis.gl/react-google-maps';
@@ -49,7 +50,12 @@ const API_KEY =
   (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
   '';
 
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
+const hasValidKey = Boolean(API_KEY) && 
+                    API_KEY !== 'YOUR_API_KEY' && 
+                    API_KEY !== 'YOUR_API_KEY_HERE' &&
+                    API_KEY !== 'undefined' &&
+                    API_KEY !== 'null' &&
+                    API_KEY.startsWith('AIza');
 
 export default function App() {
   if (hasValidKey) {
@@ -70,13 +76,53 @@ function AppContent() {
   const [formState, setFormState] = useState<string>('Kerala');
   const [formCity, setFormCity] = useState<string>('Thiruvananthapuram');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [feedScope, setFeedScope] = useState<'local' | 'national' | 'mine'>('local');
+  const [feedScope, setFeedScope] = useState<'local' | 'national' | 'mine' | 'near'>('local');
   const [projects, setProjects] = useState<ProposedProject[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<Submission[]>([]);
   const [selectedProjectForReport, setSelectedProjectForReport] = useState<ProposedProject | null>(null);
   const [activeTab, setActiveTab] = useState<'intake' | 'map' | 'proposals' | 'feed' | 'history' | 'suggestions' | 'sandbox'>('intake');
   const [liveUserCoords, setLiveUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [detectingLocation, setDetectingLocation] = useState<boolean>(false);
+
+  // Dynamically calculate coordinates of proposed projects based on their categories' submissions
+  const enrichedProjects = useMemo(() => {
+    return projects.map(proj => {
+      // If project already has coordinates, use them
+      if (proj.latitude && proj.longitude) return proj;
+
+      const matchingSubs = submissions.filter(s => s.category === proj.category && s.latitude && s.longitude);
+      let lat = proj.latitude;
+      let lng = proj.longitude;
+
+      if (matchingSubs.length > 0) {
+        const latSum = matchingSubs.reduce((sum, s) => sum + (s.latitude || 0), 0);
+        const lngSum = matchingSubs.reduce((sum, s) => sum + (s.longitude || 0), 0);
+        
+        // Add a small deterministic offset based on project ID to prevent overlay stacking
+        const hash = proj.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const offsetLat = ((hash % 10) - 5) * 0.0006;
+        const offsetLng = (((hash >> 2) % 10) - 5) * 0.0006;
+
+        lat = (latSum / matchingSubs.length) + offsetLat;
+        lng = (lngSum / matchingSubs.length) + offsetLng;
+      } else {
+        // Fallback scatter around a stable center (e.g. 8.508, 76.953 or Thiruvananthapuram)
+        const hash = proj.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const offsetLat = ((hash % 16) - 8) * 0.0015;
+        const offsetLng = (((hash >> 3) % 16) - 8) * 0.0015;
+        const centerLat = liveUserCoords?.lat || 8.5241;
+        const centerLng = liveUserCoords?.lng || 76.9366;
+        lat = centerLat + offsetLat;
+        lng = centerLng + offsetLng;
+      }
+
+      return {
+        ...proj,
+        latitude: lat,
+        longitude: lng
+      };
+    });
+  }, [projects, submissions, liveUserCoords]);
 
   const [headerCities, setHeaderCities] = useState<string[]>([]);
   const [formCities, setFormCities] = useState<string[]>([]);
@@ -112,6 +158,7 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showProfileCard, setShowProfileCard] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [showNavMenu, setShowNavMenu] = useState<boolean>(false);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -593,6 +640,18 @@ function AppContent() {
     );
   };
 
+  // Auto-detect live location on initial load
+  useEffect(() => {
+    handleAutoDetectLocation();
+  }, []);
+
+  // Auto-detect when switching to map tab if not already detected
+  useEffect(() => {
+    if (activeTab === 'map' && !liveUserCoords && !detectingLocation) {
+      handleAutoDetectLocation();
+    }
+  }, [activeTab]);
+
   // Form Submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -752,6 +811,113 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[#070b19] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black relative overflow-x-hidden cyber-grid">
       
+      {/* 0. SLIDE-OUT LEFT NAVIGATION DRAWER */}
+      <AnimatePresence>
+        {showNavMenu && (
+          <>
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowNavMenu(false)}
+              className="fixed inset-0 bg-black/80 z-50 cursor-pointer backdrop-blur-xs"
+            />
+            {/* Sidebar Drawer */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="fixed top-0 left-0 bottom-0 w-80 bg-slate-950/98 border-r border-slate-800/80 z-50 flex flex-col p-6 shadow-2xl backdrop-blur-md"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center font-extrabold text-xs text-cyan-400 font-mono tracking-wider">
+                    CP
+                  </div>
+                  <span className="text-sm font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                    CITIZEN PORTAL
+                  </span>
+                </div>
+                <button
+                  id="btn-close-navigation-menu"
+                  onClick={() => setShowNavMenu(false)}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white cursor-pointer hover:bg-slate-800/50 transition-all active:scale-95"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation Items (All requested sections) */}
+              <nav className="flex-1 py-6 space-y-2">
+                {[
+                  { id: 'intake', label: 'Intake Hub', icon: Sparkles, count: null },
+                  { id: 'map', label: 'Spatial Map', icon: MapPin, count: null },
+                  { id: 'suggestions', label: 'AI Suggestion', icon: Brain, count: null },
+                  { id: 'feed', label: 'Live Dispatch', icon: Inbox, count: totalSubmissions },
+                  { id: 'history', label: 'My History', icon: Clock, count: currentUser ? userSubmissions.length : null }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      id={`drawer-tab-btn-${item.id}`}
+                      onClick={() => {
+                        setActiveTab(item.id as any);
+                        setShowNavMenu(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-3 py-3 px-4 rounded-xl text-sm font-bold font-sans transition-all cursor-pointer border relative group ${
+                        isActive
+                          ? 'bg-gradient-to-r from-cyan-950/60 to-blue-950/60 text-cyan-400 border-cyan-500/30 shadow-[inset_0_0_15px_rgba(6,182,212,0.15)] shadow-cyan-950/40'
+                          : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-900/40 border-transparent hover:border-slate-800/40'
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="absolute left-0 top-3.5 bottom-3.5 w-1 rounded-r bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <IconComp className={`w-4 h-4 shrink-0 transition-all group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-cyan-400'}`} />
+                        <span className="font-sans font-semibold tracking-wide text-xs">{item.label}</span>
+                      </div>
+                      {item.count !== null && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-extrabold transition-all ${
+                          isActive 
+                            ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/20' 
+                            : 'bg-slate-900 text-slate-500 border border-slate-800'
+                        }`}>
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Drawer Footer with User Context */}
+              <div className="pt-6 border-t border-slate-800/80 space-y-4">
+                <div className="flex items-center gap-3 bg-slate-900/40 p-3 border border-slate-800/60 rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center font-bold text-xs text-cyan-400">
+                    {currentUser?.firstName ? currentUser.firstName[0] : ''}{currentUser?.lastName ? currentUser.lastName[0] : ''}
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-500 block leading-none font-mono uppercase font-bold">
+                      {currentUser?.isAdmin ? 'REPRESENTATIVE (MP)' : 'CITIZEN'}
+                    </span>
+                    <span className="text-xs font-extrabold text-slate-200 block">
+                      {currentUser?.firstName} {currentUser?.lastName}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Dynamic Floating Marquee Bar */}
       <div className="bg-gradient-to-r from-cyan-950/90 via-slate-950/90 to-blue-950/90 border-b border-cyan-800/30 text-[10px] text-cyan-400 font-mono py-1.5 px-4 overflow-hidden relative z-50 flex items-center shadow-md">
         <div className="shrink-0 bg-cyan-950 px-2 py-0.5 border border-cyan-500/30 rounded text-[9px] font-bold uppercase mr-3 flex items-center gap-1.5 animate-pulse">
@@ -782,13 +948,14 @@ function AppContent() {
             
             {/* Emblem + Core Title */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-950 border-2 border-cyan-500/80 flex items-center justify-center p-1 shadow-lg shadow-cyan-500/10 shrink-0">
-                <div className="w-full h-full rounded border border-cyan-800/40 flex flex-col items-center justify-center text-[6px] sm:text-[7px] font-mono text-cyan-400 font-extrabold leading-none tracking-tighter">
-                  <span>SANSAD</span>
-                  <span className="text-amber-500 text-[5px] sm:text-[6px] my-0.5 font-sans">INDIA</span>
-                  <span>PORTAL</span>
-                </div>
-              </div>
+              <button
+                id="btn-trigger-navigation-menu"
+                onClick={() => setShowNavMenu(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-950 border-2 border-cyan-500/80 flex items-center justify-center text-cyan-400 hover:text-cyan-300 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all cursor-pointer shadow-lg shadow-cyan-500/10 shrink-0 focus:outline-none"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+              </button>
 
               <div className="min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
@@ -1088,97 +1255,11 @@ function AppContent() {
         </div>
       </header>
 
-      {/* 2. LEGISLATIVE STATS HEADER ACCORDION */}
-      <section className="bg-slate-950/40 border-b border-slate-900/80 py-4 px-4 sm:px-6 relative">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-          
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-850 p-3.5 rounded-xl flex items-center gap-3 shadow-lg shadow-black/20">
-            <div className="p-2 bg-cyan-950/40 border border-cyan-800/30 rounded-lg">
-              <Inbox className="w-5 h-5 text-cyan-400" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block font-mono uppercase font-semibold">Total Submissions</span>
-              <strong className="text-sm font-sans font-extrabold text-slate-200">{totalSubmissions} Suggestion(s)</strong>
-            </div>
-          </div>
 
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-850 p-3.5 rounded-xl flex items-center gap-3 shadow-lg shadow-black/20">
-            <div className="p-2 bg-rose-950/40 border border-rose-900/30 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-rose-400" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block font-mono uppercase font-semibold">AI Critical Urgency</span>
-              <strong className="text-sm font-sans font-extrabold text-rose-400">{highUrgencyCount} High Need</strong>
-            </div>
-          </div>
 
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-850 p-3.5 rounded-xl flex items-center gap-3 shadow-lg shadow-black/20">
-            <div className="p-2 bg-amber-950/40 border border-amber-900/30 rounded-lg">
-              <Building2 className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block font-mono uppercase font-semibold">Approved Actions</span>
-              <strong className="text-sm font-sans font-extrabold text-amber-400">{actionedCount} Sanctioned</strong>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-850 p-3.5 rounded-xl flex items-center gap-3 shadow-lg shadow-black/20">
-            <div className="p-2 bg-cyan-950/40 border border-cyan-800/30 rounded-lg">
-              <Users className="w-5 h-5 text-cyan-400" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block font-mono uppercase font-semibold">Affected Citizens</span>
-              <strong className="text-sm font-sans font-extrabold text-cyan-400">~{estimatedImpactSum.toLocaleString()}</strong>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 3. FEATURE NAVIGATION TABS */}
-      <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 mt-6 relative z-10 animate-fade-in">
-        <div className="bg-slate-900/60 backdrop-blur-md p-1.5 border border-slate-800/80 rounded-2xl">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-1.5">
-            {[
-              { id: 'intake', label: 'Intake Hub', icon: Sparkles, count: null },
-              { id: 'map', label: 'Spatial Map', icon: MapPin, count: null },
-              { id: 'suggestions', label: 'AI Suggestion', icon: Brain, count: null },
-              { id: 'feed', label: 'Live Dispatch Feed', icon: Inbox, count: totalSubmissions },
-              { id: 'history', label: 'My History', icon: Clock, count: currentUser ? userSubmissions.length : null }
-            ].map((tabItem) => {
-              const IconComp = tabItem.icon;
-              const isActive = activeTab === tabItem.id;
-              return (
-                <button
-                  key={tabItem.id}
-                  id={`tab-btn-${tabItem.id}`}
-                  onClick={() => setActiveTab(tabItem.id as any)}
-                  className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer relative ${
-                    isActive
-                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-xl shadow-cyan-500/15 border border-cyan-400/20'
-                      : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-950/40 border border-transparent'
-                  }`}
-                >
-                  <IconComp className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span className="truncate">{tabItem.label}</span>
-                  {tabItem.count !== null && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-extrabold ${
-                      isActive 
-                        ? 'bg-cyan-900/40 text-cyan-200 border border-cyan-400/30' 
-                        : 'bg-slate-950 text-slate-500 border border-slate-800'
-                    }`}>
-                      {tabItem.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* 4. MAIN WORKSPACE */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 relative z-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 relative z-10 mt-2">
         <AnimatePresence mode="wait">
           
           {/* TAB 1: CITIZEN INTAKE & ENGAGEMENT HUB */}
@@ -1790,13 +1871,6 @@ function AppContent() {
                     }
                   }}
                 />
-                
-                <div className="mt-8 border-t border-slate-800 pt-8">
-                  <ReportGenerator 
-                    project={selectedProjectForReport}
-                    language={lang}
-                  />
-                </div>
               </div>
             </motion.div>
           )}
@@ -1815,27 +1889,12 @@ function AppContent() {
                 <GoogleMapComponent
                   cityName={selectedCity}
                   submissions={submissions}
+                  projects={enrichedProjects}
                   liveUserCoords={liveUserCoords}
+                  detectingLocation={detectingLocation}
+                  onDetectLocation={handleAutoDetectLocation}
+                  language={lang}
                 />
-              </div>
-
-              <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-850 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-cyan-400 animate-bounce" />
-                    Interactive Spatial Analysis Grid
-                  </h4>
-                  <p className="text-xs text-slate-400 leading-relaxed max-w-2xl font-sans">
-                    Interactive Spatial Analysis Grid for {selectedCity}. Use the heatmap metric switcher on the map to visualize submission density across the city.
-                  </p>
-                </div>
-                <button
-                  id="btn-view-all-feed"
-                  onClick={() => setActiveTab('feed')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-355 font-bold text-xs rounded-xl cursor-pointer font-sans shrink-0"
-                >
-                  Browse Entire Feed ({submissions.length}) →
-                </button>
               </div>
             </motion.div>
           )}
@@ -1877,7 +1936,7 @@ function AppContent() {
               className="space-y-6"
             >
               <PrioritySandbox
-                projects={projects}
+                projects={enrichedProjects}
                 onSelectProjectForReport={(proj) => {
                   setSelectedProjectForReport(proj);
                   setActiveTab('intake');
@@ -1887,6 +1946,7 @@ function AppContent() {
                 }}
                 selectedProject={selectedProjectForReport}
                 language={lang}
+                liveUserCoords={liveUserCoords}
               />
             </motion.div>
           )}
@@ -2059,6 +2119,7 @@ function AppContent() {
                 feedScope={feedScope}
                 onChangeFeedScope={setFeedScope}
                 currentUser={currentUser}
+                liveUserCoords={liveUserCoords}
               />
             </motion.div>
           )}
@@ -2069,10 +2130,7 @@ function AppContent() {
       {/* FOOTER COGNIZANCE */}
       <footer className="bg-slate-950 border-t border-slate-850 py-8 px-4 mt-12 text-center text-xs text-slate-500 font-sans space-y-2">
         <p>© 2026 Office of the Member of Parliament. All legislative datasets secured by AI clearance protocols.</p>
-
       </footer>
-
-
 
     </div>
   );

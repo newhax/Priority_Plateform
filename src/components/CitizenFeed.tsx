@@ -7,6 +7,7 @@ import {
   Globe
 } from 'lucide-react';
 import { Submission } from '../types';
+import { getDistance } from '../utils/geo';
 
 interface CitizenFeedProps {
   submissions: Submission[];
@@ -15,9 +16,10 @@ interface CitizenFeedProps {
   selectedState: string;
   lang: string;
   t: any;
-  feedScope: 'local' | 'national' | 'mine';
-  onChangeFeedScope: (scope: 'local' | 'national' | 'mine') => void;
+  feedScope: 'local' | 'national' | 'mine' | 'near';
+  onChangeFeedScope: (scope: 'local' | 'national' | 'mine' | 'near') => void;
   currentUser?: any;
+  liveUserCoords?: { lat: number; lng: number } | null;
 }
 
 export const CitizenFeed: React.FC<CitizenFeedProps> = ({
@@ -29,7 +31,8 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
   t,
   feedScope,
   onChangeFeedScope,
-  currentUser
+  currentUser,
+  liveUserCoords = null
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -125,6 +128,15 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
       if (!isMine) return false;
     }
 
+    // Near me filter
+    if (feedScope === 'near') {
+      if (!liveUserCoords) return false;
+      if (!sub.latitude || !sub.longitude) return false;
+      const dist = getDistance(liveUserCoords.lat, liveUserCoords.lng, sub.latitude, sub.longitude);
+      // Show within 15km
+      return dist <= 15;
+    }
+
     // Search input match
     const handleStr = `@${sub.name.toLowerCase().replace(/\s+/g, '_')}`;
     const matchesSearch = 
@@ -148,6 +160,14 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
   });
 
   const sortedList = [...filteredList].sort((a, b) => {
+    // If near mode or sorted by proximity, sort by distance to user's live coordinates
+    if (sortOption === 'proximity' || (feedScope === 'near' && sortOption === 'newest')) {
+      if (liveUserCoords && a.latitude && a.longitude && b.latitude && b.longitude) {
+        const distA = getDistance(liveUserCoords.lat, liveUserCoords.lng, a.latitude, a.longitude);
+        const distB = getDistance(liveUserCoords.lat, liveUserCoords.lng, b.latitude, b.longitude);
+        return distA - distB;
+      }
+    }
     switch (sortOption) {
       case 'newest':
         return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -261,6 +281,19 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
               <Sparkles className="w-3.5 h-3.5" />
               <span>My Suggestions</span>
             </button>
+            {liveUserCoords && (
+              <button
+                onClick={() => onChangeFeedScope('near')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  feedScope === 'near'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md font-sans'
+                    : 'text-slate-400 hover:text-slate-200 font-sans'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Near GPS ({liveUserCoords.lat.toFixed(2)}, {liveUserCoords.lng.toFixed(2)})</span>
+              </button>
+            )}
           </div>
 
           {/* Total stats counters */}
@@ -335,6 +368,7 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
               <option value="oldest">Oldest First</option>
               <option value="urgency">Highest Urgency</option>
               <option value="category">Category (A-Z)</option>
+              {liveUserCoords && <option value="proximity">Proximity (Closest First)</option>}
             </select>
           </div>
 
@@ -482,6 +516,19 @@ export const CitizenFeed: React.FC<CitizenFeedProps> = ({
                               <span className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 font-extrabold shadow-sm" title="Verified with Hardware GPS Signal">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 GPS SECURED
+                              </span>
+                            </>
+                          )}
+
+                          {liveUserCoords && sub.latitude && sub.longitude && (
+                            <>
+                              <span className="text-slate-700 font-mono text-[10px]">•</span>
+                              <span className="text-[10px] text-cyan-400 bg-cyan-950/30 border border-cyan-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1.5 font-extrabold shadow-sm">
+                                <MapPin className="w-3 h-3 text-cyan-400 animate-pulse" />
+                                {getDistance(liveUserCoords.lat, liveUserCoords.lng, sub.latitude, sub.longitude) < 1
+                                  ? `${(getDistance(liveUserCoords.lat, liveUserCoords.lng, sub.latitude, sub.longitude) * 1000).toFixed(0)}m away`
+                                  : `${getDistance(liveUserCoords.lat, liveUserCoords.lng, sub.latitude, sub.longitude).toFixed(1)} km away`
+                                }
                               </span>
                             </>
                           )}

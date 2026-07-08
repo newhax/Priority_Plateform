@@ -17,6 +17,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     impactCount: 1200,
     status: 'Reviewed',
     aiSummary: 'Demand for a government high school in Kazhakkoottam due to long school commute distances and unaffordable transit costs.',
+    latitude: 8.5684,
+    longitude: 76.8732,
+    locationVerified: true
   },
   {
     id: 'sub_2',
@@ -34,6 +37,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     audioUrl: '#simulated-audio-wave',
     status: 'Approved',
     aiSummary: 'Urgent requests to upgrade and fix the beachside drainage system near Kovalam to stop water contamination and protect tourist health.',
+    latitude: 8.4005,
+    longitude: 76.9785,
+    locationVerified: true
   },
   {
     id: 'sub_3',
@@ -50,6 +56,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     impactCount: 2500,
     status: 'Received',
     aiSummary: 'Proposal for an industrial/vocational training school at Vizhinjam to equip local youth with skills required for port operations.',
+    latitude: 8.3758,
+    longitude: 76.9904,
+    locationVerified: true
   },
   {
     id: 'sub_4',
@@ -66,6 +75,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     impactCount: 1500,
     status: 'Received',
     aiSummary: 'Critical summer water shortages in Vattiyoorkavu. Call for emergency pipeline repair and localized public drinking water kiosks.',
+    latitude: 8.5284,
+    longitude: 76.9801,
+    locationVerified: true
   },
   {
     id: 'sub_5',
@@ -83,6 +95,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     photoUrls: ['/assets/sample_traffic.jpg'],
     status: 'Received',
     aiSummary: 'Critical ambulance blockages on Medical College roads. Recommends immediate pedestrian subways or intersection restructuring.',
+    latitude: 8.5218,
+    longitude: 76.9270,
+    locationVerified: true
   },
   {
     id: 'sub_6',
@@ -99,6 +114,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     impactCount: 3000,
     status: 'Reviewed',
     aiSummary: 'Congestion and maternal healthcare gap at Nemom PHC. Recommends expanding specialized pediatric and maternity wings to avoid travel to general hospitals.',
+    latitude: 8.4632,
+    longitude: 77.0003,
+    locationVerified: true
   },
   {
     id: 'sub_7',
@@ -116,6 +134,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     audioUrl: '#simulated-audio-wave',
     status: 'Received',
     aiSummary: 'Inadequate drainage system in Ulloor leading to severe localized urban flooding during standard monsoons.',
+    latitude: 8.5342,
+    longitude: 76.9184,
+    locationVerified: true
   },
   {
     id: 'sub_8',
@@ -132,6 +153,9 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     impactCount: 400,
     status: 'Received',
     aiSummary: 'Enhancement of senior citizen accessibility in public parks at Vazhuthacaud, along with eco-friendly solar lighting.',
+    latitude: 8.5012,
+    longitude: 76.9584,
+    locationVerified: true
   }
 ];
 

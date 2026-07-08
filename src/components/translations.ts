@@ -64,7 +64,7 @@ export interface TranslationDict {
 
 export const translations: Record<string, any> = {
   en: {
-    title: "Citizen Development Portal",
+    title: "Citizen Portal",
     subtitle: "Consolidating public demand with dynamic civic planning",
     constituency: "Thiruvananthapuram Constituency",
     submitSuggestion: "Submit New Suggestion",
@@ -190,7 +190,7 @@ export const translations: Record<string, any> = {
     noSubmissions: "{city}, {state} മേഖലയിൽ നിലവിൽ നിർദ്ദേശങ്ങളൊന്നുമില്ല."
   },
   hi: {
-    title: "सांसद-नागरिक विकास पोर्टल",
+    title: "नागरिक विकास पोर्टल",
     subtitle: "लोकतांत्रिक योजना के साथ जन मांग का एकीकरण",
     constituency: "तिरुवनंतपुरम लोकसभा निर्वाचन क्षेत्र",
     submitSuggestion: "नया सुझाव दर्ज करें",

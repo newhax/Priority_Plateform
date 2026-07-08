@@ -37,6 +37,8 @@ export interface ProposedProject {
   description: string;
   state?: string;
   constituency?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PrioritizationWeights {
