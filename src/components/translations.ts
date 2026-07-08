@@ -5,7 +5,7 @@ export interface TranslationDict {
   submitSuggestion: string;
   citizenName: string;
   phoneOptional: string;
-  selectWard: string;
+  selectArea: string;
   suggestionPlaceholder: string;
   submitBtn: string;
   processing: string;
@@ -48,10 +48,18 @@ export interface TranslationDict {
   aiTranslation: string;
   aiSummary: string;
   impactScale: string;
-  wardSelectAll: string;
   officialReport: string;
   printingReport: string;
   generateReportBtn: string;
+  liveFeedLabel: string;
+  liveFeedMsg1: string;
+  liveFeedMsg2: string;
+  liveFeedMsg3: string;
+  liveFeedMsg4: string;
+  myHistory: string;
+  pdfReceipt: string;
+  noHistory: string;
+  noSubmissions: string;
 }
 
 export const translations: Record<string, any> = {
@@ -62,7 +70,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "Submit New Suggestion",
     citizenName: "Citizen Name",
     phoneOptional: "Phone Number (Optional)",
-    selectWard: "Select Ward/Division",
+    selectArea: "Select Area",
     suggestionPlaceholder: "Describe your suggestion or grievance (e.g., We need water pipelines or school upgrades)...",
     submitBtn: "Submit Grievance",
     processing: "AI Analyzing Submission...",
@@ -74,7 +82,7 @@ export const translations: Record<string, any> = {
     photoUpload: "Photo Attachment",
     photoDragDrop: "Drag and drop a photo of the issue or click to select",
     whatsAppSync: "WhatsApp Live Sync",
-    whatsAppDesc: "See how citizens submit issues instantly via WhatsApp helpline",
+    whatsAppDesc: "See how citizens submit issues instantly via WhatsApp channels",
     mpDashboard: "Citizen Decision Support Dashboard",
     rankingSandbox: "Dynamic Prioritization Sandbox",
     sandboxDesc: "Adjust weights to automatically rank proposed projects based on objective demand data:",
@@ -105,10 +113,18 @@ export const translations: Record<string, any> = {
     aiTranslation: "AI English Translation",
     aiSummary: "AI-Generated Summary",
     impactScale: "Estimated Affected Citizens",
-    wardSelectAll: "All Wards",
     officialReport: "Official Legislative Project Proposal",
     printingReport: "Drafting government proposal via Gemini...",
-    generateReportBtn: "Generate Recommendation Proposal"
+    generateReportBtn: "Generate Recommendation Proposal",
+    liveFeedLabel: "LIVE SYSTEM FEED",
+    liveFeedMsg1: "CITIZEN DEVELOPMENT PORTAL: AUTOMATED CIVIC DEMAND INTAKE & SYSTEM INTERPRETER LIVE",
+    liveFeedMsg2: "MULTI-LINGUAL SUPPORT PARSING VOICE & DIGITAL IMAGES IN REAL-TIME",
+    liveFeedMsg3: "REAL-TIME CONSTITUENCY PLANNING: INTEGRATING PUBLIC DEMAND + SPATIAL DECISION MAKING",
+    liveFeedMsg4: "AI AUTO-SUMMARIZATION AND PROPOSAL DESK GENERATES CONSTITUENCY DRAFTS SECURELY",
+    myHistory: "My Submitted Grievances",
+    pdfReceipt: "PDF Receipt",
+    noHistory: "No grievances submitted yet.",
+    noSubmissions: "No submissions currently recorded for {city}, {state}."
   },
   ml: {
     title: "ജനസമ്പർക്ക വികസന പോർട്ടൽ",
@@ -117,7 +133,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "പുതിയ വികസന നിർദ്ദേശം സമർപ്പിക്കുക",
     citizenName: "നിങ്ങളുടെ പേര്",
     phoneOptional: "ഫോൺ നമ്പർ (നിർബന്ധമില്ല)",
-    selectWard: "വാർഡ്/പ്രദേശം തിരഞ്ഞെടുക്കുക",
+    selectArea: "പ്രദേശം തിരഞ്ഞെടുക്കുക",
     suggestionPlaceholder: "നിങ്ങളുടെ വികസന നിർദ്ദേശമോ പരാതിയോ വിവരിക്കുക (ഉദാഹരണത്തിന്: സ്കൂൾ വികസനം അല്ലെങ്കിൽ റോഡ് അറ്റകുറ്റപ്പണി)...",
     submitBtn: "നിർദ്ദേശം സമർപ്പിക്കുക",
     processing: "എ ഐ വിശകലനം ചെയ്യുന്നു...",
@@ -159,11 +175,19 @@ export const translations: Record<string, any> = {
     original: "യഥാർത്ഥ സന്ദേശം",
     aiTranslation: "ഇംഗ്ലീഷ് പരിഭാഷ (എ ഐ)",
     aiSummary: "ലഘു സംഗ്രഹം (എ ഐ)",
-    impactScale: "പ്രയോജനം ലഭിക്കുന്ന ജനങ്ങൾ",
-    wardSelectAll: "എല്ലാ വാർഡുകളും",
+    impactScale: "ప్రയോജనం ലഭിക്കുന്ന ജനങ്ങൾ",
     officialReport: "ഔദ്യോഗിക വികസന പദ്ധതി റിപ്പോർട്ട്",
     printingReport: "ജെമിനി റിപ്പോർട്ട് തയ്യാറാക്കുന്നു...",
-    generateReportBtn: "ശുപാർശ കത്തും റിപ്പോർട്ടും തയ്യാറാക്കുക"
+    generateReportBtn: "ശുപാർശ കത്തും റിപ്പോർട്ടും തയ്യാറാക്കുക",
+    liveFeedLabel: "തത്സമയ സിസ്റ്റം ഫീഡ്",
+    liveFeedMsg1: "പൗരക്ഷേമ വികസന പോർട്ടൽ: ഓട്ടോമേറ്റഡ് സിവിക് ഡിമാൻഡ് ഇൻടേക്കും സിസ്റ്റം ഇന്റർപ്രെറ്ററും പ്രവർത്തനക്ഷമമാണ്",
+    liveFeedMsg2: "വോയ്‌സും ഡിജിറ്റൽ ചിത്രങ്ങളും തത്സമയം വിശകലനം ചെയ്യാനുള്ള ബഹുഭാഷാ പിന്തുണ ലഭ്യമാണ്",
+    liveFeedMsg3: "തത്സമയ നിയോജകമണ്ഡല ആസൂത്രണം: ജനങ്ങളുടെ ആവശ്യങ്ങളും സ്ഥലസംബന്ധിയായ തീരുമാനങ്ങളും സമന്വയിപ്പിക്കുന്നു",
+    liveFeedMsg4: "എ ഐ ഓട്ടോ-സംഗ്രഹവും നിർദ്ദേശ ഡെസ്കും നിയോജകമണ്ഡല ഡ്രാഫ്റ്റുകൾ സുരക്ഷിതമായി നിർമ്മിക്കുന്നു",
+    myHistory: "എന്റെ പരാതികൾ",
+    pdfReceipt: "പി ഡി എഫ് റെസീപ്റ്റ്",
+    noHistory: "പരാതികൾ ഒന്നും സമർപ്പിച്ചിട്ടില്ല.",
+    noSubmissions: "{city}, {state} മേഖലയിൽ നിലവിൽ നിർദ്ദേശങ്ങളൊന്നുമില്ല."
   },
   hi: {
     title: "सांसद-नागरिक विकास पोर्टल",
@@ -172,7 +196,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "नया सुझाव दर्ज करें",
     citizenName: "नागरिक का नाम",
     phoneOptional: "फ़ोन नंबर (वैकल्पिक)",
-    selectWard: "वार्ड/क्षेत्र चुनें",
+    selectArea: "क्षेत्र चुनें",
     suggestionPlaceholder: "अपने सुझाव या शिकायत का विवरण दें (जैसे स्कूल अपग्रेड या पेयजल पाइपलाइन)...",
     submitBtn: "सुझाव दर्ज करें",
     processing: "एआई सुझाव का विश्लेषण कर रहा है...",
@@ -191,6 +215,42 @@ export const translations: Record<string, any> = {
     sliderDemand: "नागरिक मांग घनत्व",
     sliderGap: "बुनियादी ढांचा अंतर घाटा",
     sliderDemo: "जनसांख्यिकीय आवश्यकता",
+    sliderCost: "लागत-लाभ दक्षता",
+    rankedProjects: "रैंक किए गए विकास प्रस्ताव",
+    generateReport: "एआई नागरिक रिपोर्ट निर्माता",
+    customFocus: "अतिरिक्त नागरिक दिशानिर्देश (वैकल्पिक)",
+    customFocusPlaceholder: "जैसे, स्थानीय युवाओं को रोजगार, त्वरित पर्यावरणीय मंजूरी...",
+    selectLanguage: "आउटपुट रिपोर्ट भाषा",
+    demographics: "निर्वाचन क्षेत्र जनसांख्यिकी",
+    population: "जनसंख्या",
+    income: "औसत आय",
+    elderlyRatio: "बुजुर्ग जनसंख्या",
+    studentRatio: "छात्र जनसंख्या",
+    infraDeficit: "बुनियादी ढांचा अंतर मेट्रिक्स",
+    schools: "स्कूलों की कमी",
+    clinics: "स्वास्थ्य क्लिनिक की कमी",
+    waterAccess: "पानी की कमी (% बिना पाइप के)",
+    roadQuality: "सड़क पारगमन घाटा",
+    activeFeed: "समेकित नागरिक सुझाव फ़ीड",
+    category: "श्रेणी",
+    urgency: "एआई तात्कालिकता",
+    actionStatus: "स्थिति कार्रवाई",
+    original: "मूल भाषा",
+    aiTranslation: "एआई अंग्रेजी अनुवाद",
+    aiSummary: "एआई-जनित सारांश",
+    impactScale: "अनुमानित प्रभावित नागरिक",
+    officialReport: "आधिकारिक विधायी परियोजना प्रस्ताव",
+    printingReport: "जेमिनी के माध्यम से सरकारी प्रस्ताव तैयार किया जा रहा है...",
+    generateReportBtn: "सिफारिश प्रस्ताव उत्पन्न करें",
+    liveFeedLabel: "लाइव सिस्टम फीड",
+    liveFeedMsg1: "नागरिक विकास पोर्टल: स्वचालित नागरिक मांग प्रग्रहण और दुभाषिया प्रणाली लाइव है",
+    liveFeedMsg2: "आवाज और डिजिटल छवियों को वास्तविक समय में पार्स करने के लिए बहुभाषी सहायता उपलब्ध है",
+    liveFeedMsg3: "वास्तविक समय निर्वाचन क्षेत्र योजना: जन मांग + स्थानिक निर्णय प्रक्रिया का एकीकरण",
+    liveFeedMsg4: "एआई ऑटो-समरी और प्रस्ताव डेस्क निर्वाचन क्षेत्र ड्राफ्ट को सुरक्षित रूप से तैयार करता है",
+    myHistory: "मेरी शिकायतें",
+    pdfReceipt: "पीडीएफ रसीद",
+    noHistory: "अभी तक कोई शिकायत दर्ज नहीं की गई हैा",
+    noSubmissions: "{city}, {state} के लिए वर्तमान में कोई सुझाव दर्ज नहीं है।"
   },
   bn: {
     title: "নাগরিক উন্নয়ন পোর্টাল",
@@ -199,7 +259,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "নতুন পরামর্শ জমা দিন",
     citizenName: "নাগরিকের নাম",
     phoneOptional: "ফোন নম্বর (ঐচ্ছিক)",
-    selectWard: "ওয়ার্ড/অঞ্চল নির্বাচন করুন",
+    selectArea: "অঞ্চল নির্বাচন করুন",
     suggestionPlaceholder: "আপনার পরামর্শ বা অভিযোগের বিবরণ দিন (যেমন: আমাদের জলের পাইপলাইন বা স্কুল আপগ্রেড প্রয়োজন)...",
     submitBtn: "অভিযোগ জমা দিন",
     processing: "এআই পরামর্শ বিশ্লেষণ করছে...",
@@ -242,10 +302,15 @@ export const translations: Record<string, any> = {
     aiTranslation: "এআই ইংরেজি অনুবাদ",
     aiSummary: "এআই-উত্পন্ন সারাংশ",
     impactScale: "সম্ভাব্য প্রভাবিত নাগরিক",
-    wardSelectAll: "সব ওয়ার্ড",
     officialReport: "অফিসিয়াল আইনী উন্নয়ন প্রস্তাব",
     printingReport: "জেমিনি দ্বারা প্রস্তাব তৈরি করা হচ্ছে...",
-    generateReportBtn: "উন্নয়ন প্রস্তাব তৈরি করুন"
+    generateReportBtn: "উন্নয়ন প্রস্তাব তৈরি করুন",
+    liveFeedLabel: "লাইভ সিস্টেম ফিড",
+    liveFeedMsg1: "নাগরিক উন্নয়ন পোর্টাল: স্বয়ংক্রিয় নাগরিক চাহিদা সংগ্রহ ও সিস্টেম ইন্টারপ্রেটার লাইভ",
+    liveFeedMsg2: "ভয়েস এবং ডিজিটাল ছবি রিয়েল-টাইমে বিশ্লেষণ করার জন্য বহুভাষিক সহায়তা উপলব্ধ",
+    liveFeedMsg3: "রিয়েল-টাইম নির্বাচনী এলাকা পরিকল্পনা: গণ চাহিদা + স্থানিক সিদ্ধান্ত গ্রহণের সমন্বয়",
+    liveFeedMsg4: "এআই অটো-সামারি এবং প্রস্তাব ডেস্ক নিরাপদে নির্বাচনী এলাকার খসড়া তৈরি করে",
+    noSubmissions: "{city}, {state} এর জন্য বর্তমানে কোনো পরামর্শ রেকর্ড করা নেই।"
   },
   pa: {
     title: "ਨਾਗਰਿਕ ਵਿਕਾਸ ਪੋਰਟਲ",
@@ -254,7 +319,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "ਨਵਾਂ ਸੁਝਾਅ ਦਰਜ ਕਰੋ",
     citizenName: "ਨਾਗਰਿਕ ਦਾ ਨਾਮ",
     phoneOptional: "ਫ਼ੋਨ ਨੰਬਰ (ਵਿਕਲਪਿਕ)",
-    selectWard: "ਵਾਰਡ/ਖੇਤਰ ਚੁਣੋ",
+    selectArea: "ਖੇਤਰ ਚੁਣੋ",
     suggestionPlaceholder: "ਆਪਣੇ ਸੁਝਾਅ ਜਾਂ ਸ਼ਿਕਾਇਤ ਦਾ ਵੇਰਵਾ ਦਿਓ (ਜਿਵੇਂ ਕਿ ਸਾਨੂੰ ਪਾਣੀ ਦੀਆਂ ਪਾਈਪਲਾਈਨਾਂ ਜਾਂ ਸਕੂਲ ਅੱਪਗ੍ਰੇਡ ਦੀ ਲੋੜ ਹੈ)...",
     submitBtn: "ਸੁਝਾਅ ਦਰਜ ਕਰੋ",
     processing: "AI ਸੁਝਾਅ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਕਰ ਰਿਹਾ ਹੈ...",
@@ -297,10 +362,15 @@ export const translations: Record<string, any> = {
     aiTranslation: "AI ਅੰਗਰੇਜ਼ੀ ਅਨੁਵਾਦ",
     aiSummary: "AI-ਦੁਆਰਾ ਤਿਆਰ ਕੀਤਾ ਸਾਰਾਂਸ਼",
     impactScale: "ਸੰਭਾਵਤ ਪ੍ਰਭਾਵਿਤ ਨਾਗਰਿਕ",
-    wardSelectAll: "ਸਾਰੇ ਵਾਰਡ",
     officialReport: "ਅਧਿਕਾਰਤ ਵਿਧਾਨਕ ਵਿਕਾਸ ਪ੍ਰਸਤਾਵ",
     printingReport: "ਜੈਮਿਨੀ ਦੁਆਰਾ ਪ੍ਰਸਤਾਵ ਤਿਆਰ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
-    generateReportBtn: "ਵਿਕਾਸ ਪ੍ਰਸਤਾਵ ਤਿਆਰ ਕਰੋ"
+    generateReportBtn: "ਵਿਕਾਸ ਪ੍ਰਸਤਾਵ ਤਿਆਰ ਕਰੋ",
+    liveFeedLabel: "ਲਾਈਵ ਸਿਸਟਮ ਫੀਡ",
+    liveFeedMsg1: "ਨਾਗਰਿਕ ਵਿਕਾਸ ਪੋਰਟਲ: ਸਵੈਚਾਲਿਤ ਨਾਗਰਿਕ ਮੰਗ ਪ੍ਰਾਪਤੀ ਅਤੇ ਸਿਸਟਮ ਦੁਭਾਸ਼ੀਆ ਲਾਈਵ",
+    liveFeedMsg2: "ਆਵਾਜ਼ ਅਤੇ ਡਿਜੀਟਲ ਚਿੱਤਰਾਂ ਨੂੰ ਅਸਲ ਸਮੇਂ ਵਿੱਚ ਪਾਰਸ ਕਰਨ ਲਈ ਬਹੁ-ਭਾਸ਼ਾਈ ਸਹਾਇਤਾ ਉਪਲਬਧ",
+    liveFeedMsg3: "ਰੀਅਲ-ਟਾਈਮ ਹਲਕਾ ਯੋਜਨਾਬੰਦੀ: ਲੋਕ ਮੰਗ + ਸਥਾਨਿਕ ਫੈਸਲੇ ਲੈਣ ਦੀ ਪ੍ਰਕਿਰਿਆ ਦਾ ਏਕੀਕਰਨ",
+    liveFeedMsg4: "AI ਆਟੋ-ਸੰਖੇਪ ਅਤੇ ਪ੍ਰਸਤਾਵ ਡੈਸਕ ਹਲਕੇ ਦੇ ਖਰੜੇ ਨੂੰ ਸੁਰੱਖਿਅਤ ਢੰਗ ਨਾਲ ਤਿਆਰ ਕਰਦਾ ਹੈ",
+    noSubmissions: "{city}, {state} ਲਈ ਵਰਤਮਾਨ ਵਿੱਚ ਕੋਈ ਸੁਝਾਅ ਦਰਜ ਨਹੀਂ ਹੈ।"
   },
   te: {
     title: "పౌరుల అభివృద్ధి పోర్టల్",
@@ -309,7 +379,7 @@ export const translations: Record<string, any> = {
     submitSuggestion: "కొత్త సూచనను సమర్పించండి",
     citizenName: "పౌరుడి పేరు",
     phoneOptional: "ఫోన్ నంబర్ (ఐచ్ఛికం)",
-    selectWard: "వార్డు/విభాగాన్ని ఎంచుకోండి",
+    selectArea: "ప్రాంతాన్ని ఎంచుకోండి",
     suggestionPlaceholder: "మీ సూచన లేదా ఫిర్యాదును వివరించండి (ఉదా. మాకు నీటి పైప్‌లైన్లు లేదా పాఠశాల నవీకరణలు అవసరం)...",
     submitBtn: "ఫిర్యాదును సమర్పించండి",
     processing: "AI విశ్లేషిస్తోంది...",
@@ -352,10 +422,15 @@ export const translations: Record<string, any> = {
     aiTranslation: "AI ఇంగ్లీష్ అనువాదం",
     aiSummary: "AI రూపొందించిన సారాంశం",
     impactScale: "ప్రభావితమయ్యే పౌరులు",
-    wardSelectAll: "అన్ని వార్డులు",
     officialReport: "అధికారిక అభివృద్ధి ప్రతిపాదన",
     printingReport: "జెమిని ద్వారా ప్రతిపాదన సిద్ధమవుతోంది...",
     generateReportBtn: "సిఫార్సు నివేదికను రూపొందించండి",
+    liveFeedLabel: "లైవ్ సిస్టమ్ ఫీడ్",
+    liveFeedMsg1: "పౌరుల అభివృద్ధి పోర్టల్: ఆటోమేటెడ్ సివిక్ డిమాండ్ ఇన్‌టేక్ & సిస్టమ్ ఇంటర్‌ప్రెటర్ లైవ్",
+    liveFeedMsg2: "వాయిస్ & డిజిటల్ చిత్రాలను నిజ సమయంలో పార్సింగ్ చేయడానికి బహుభాషా మద్దతు ఉంది",
+    liveFeedMsg3: "నిజ-సమయ నియోజకవర్గ ప్రణాళిక: ప్రజా డిమాండ్ + ప్రాspatial నిర్ణయ ప్రక్రియ సమన్వయం",
+    liveFeedMsg4: "AI ఆటో-సారాంశం మరియు ప్రతిపాదన డెస్క్ నియోజకవర్గ ముసాయిదాలను సురક્ષితంగా రూపొందిస్తుంది",
+    noSubmissions: "{city}, {state} కోసం ప్రస్తుతం ఎటువంటి సూచనలు నమోదు కాలేదు."
   }
 };
 

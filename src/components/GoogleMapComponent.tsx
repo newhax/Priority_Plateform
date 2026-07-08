@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { APIProvider, Map, useMap, useMapsLibrary, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { WardData, Submission } from '../types';
-import { Layers, Users, GraduationCap, Flame, Droplet, MapPin, Eye } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Map, useMap, useMapsLibrary, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { Submission } from '../types';
+import { Layers, MapPin } from 'lucide-react';
 
 const API_KEY =
   process.env.GOOGLE_MAPS_PLATFORM_KEY ||
@@ -12,69 +12,138 @@ const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
 
 interface GoogleMapComponentProps {
   cityName: string;
-  wards: WardData[];
   submissions: Submission[];
-  selectedWardId: string | null;
-  onSelectWard: (wardId: string | null) => void;
+  liveUserCoords?: google.maps.LatLngLiteral | null;
+  language?: string;
 }
 
-// Custom Polygon Component using standard google.maps.Polygon
-const Polygon: React.FC<{
-  paths: google.maps.LatLngLiteral[];
-  fillColor: string;
-  fillOpacity: number;
-  strokeColor: string;
-  strokeOpacity: number;
-  strokeWeight: number;
-  onClick?: () => void;
-}> = ({ paths, fillColor, fillOpacity, strokeColor, strokeOpacity, strokeWeight, onClick }) => {
-  const map = useMap();
-  const polygonRef = useRef<google.maps.Polygon | null>(null);
-
-  useEffect(() => {
-    if (!map) return;
-
-    const polygon = new google.maps.Polygon({
-      paths,
-      fillColor,
-      fillOpacity,
-      strokeColor,
-      strokeOpacity,
-      strokeWeight,
-    });
-
-    polygon.setMap(map);
-    polygonRef.current = polygon;
-
-    let clickListener: google.maps.MapsEventListener | null = null;
-    if (onClick) {
-      clickListener = google.maps.event.addListener(polygon, 'click', () => {
-        onClick();
-      });
-    }
-
-    return () => {
-      polygon.setMap(null);
-      if (clickListener) {
-        google.maps.event.removeListener(clickListener);
-      }
-    };
-  }, [map, paths, fillColor, fillOpacity, strokeColor, strokeOpacity, strokeWeight]);
-
-  // Handle dynamic style updates without recreating the polygon
-  useEffect(() => {
-    if (polygonRef.current) {
-      polygonRef.current.setOptions({
-        fillColor,
-        fillOpacity,
-        strokeColor,
-        strokeOpacity,
-        strokeWeight,
-      });
-    }
-  }, [fillColor, fillOpacity, strokeColor, strokeOpacity, strokeWeight]);
-
-  return null;
+const mapTranslations: Record<string, any> = {
+  en: {
+    keyRequired: "Google Maps API Key Required",
+    keyDesc: "Get an API key from Google Cloud Console to unlock interactive spatial heatmaps and real-time division analysis.",
+    howToAdd: "To add your API key:",
+    getApiKey: "Get an API key: ",
+    gmapsStart: "Google Maps Start",
+    openSettings: "Open Settings (⚙️ gear icon, top-right corner)",
+    goSecrets: "Go to Secrets",
+    addSecret: "Add a secret named GOOGLE_MAPS_PLATFORM_KEY",
+    rebuildDesc: "The app will rebuild automatically after saving the secret.",
+    citywideAnalytics: "Citywide Analytics",
+    visualizingSub: "Visualizing submission clusters and critical infrastructure needs across",
+    urgency: "Grievance Urgency:",
+    low: "Low",
+    medium: "Medium",
+    high: "High/Critical",
+    need: "NEED"
+  },
+  ml: {
+    keyRequired: "ഗൂഗിൾ മാപ്സ് API കീ ആവശ്യമാണ്",
+    keyDesc: "തത്സമയ വിശകലന മാപ്പുകൾ കാണുന്നതിനായി ഗൂഗിൾ ക്ലൗഡ് കൺസോളിൽ നിന്ന് ലഭിക്കുന്ന എപിഐ കീ നൽകുക.",
+    howToAdd: "എപിഐ കീ ചേർക്കാൻ ഉള്ള നിർദ്ദേശങ്ങൾ:",
+    getApiKey: "കീ ലഭിക്കാൻ ഈ ലിങ്ക് സന്ദർശിക്കുക: ",
+    gmapsStart: "ഗൂഗിൾ മാപ്സ് തുടക്കം",
+    openSettings: "മുകളിൽ വലതുവശത്തുള്ള സെറ്റിങ്സ് (⚙️ ഗിയർ ഐക്കൺ) ക്ലിക്ക് ചെയ്യുക",
+    goSecrets: "Secrets ക്ലിക്ക് ചെയ്യുക",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY എന്ന പേരിൽ കീ ചേർക്കുക",
+    rebuildDesc: "കീ സേവ് ചെയ്തതിന് ശേഷം ആപ്പ് ഓട്ടോമാറ്റിക്കായി റീബിൽഡ് ചെയ്യപ്പെടും.",
+    citywideAnalytics: "നഗരതല വിവരങ്ങൾ",
+    visualizingSub: "നഗരത്തിലെ പരാതികളും അത്യാവശ്യ അടിസ്ഥാന സൗകര്യങ്ങളും മാപ്പിൽ രേഖപ്പെടുത്തുന്നു:",
+    urgency: "പരാതികളുടെ തീവ്രത:",
+    low: "കുറഞ്ഞത്",
+    medium: "ഇടത്തരം",
+    high: "കൂടിയത്/അടിയന്തിരം",
+    need: "ആവശ്യം"
+  },
+  hi: {
+    keyRequired: "गूगल मैप्स एपीआई की आवश्यक है",
+    keyDesc: "इंटरैक्टिव स्थानिक हीटमैप और रीयल-टाइम विश्लेषण को अनलॉक करने के लिए Google क्लाउड कंसोल से एपीआई की प्राप्त करें।",
+    howToAdd: "एपीआई की जोड़ने के लिए:",
+    getApiKey: "एपीआई की प्राप्त करें: ",
+    gmapsStart: "गूगल मैप्स प्रारंभ",
+    openSettings: "सेटिंग्स खोलें (⚙️ गियर आइकन, ऊपरी दाएं कोने)",
+    goSecrets: "Secrets पर जाएं",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY नाम से एक सीक्रेट जोड़ें",
+    rebuildDesc: "सीक्रेट सहेजने के बाद ऐप स्वचालित रूप से फिर से बन जाएगा।",
+    citywideAnalytics: "शहरव्यापी विश्लेषण",
+    visualizingSub: "शिकायतों और महत्वपूर्ण बुनियादी ढाँचे की कमियों का चित्रण:",
+    urgency: "शिकायत तात्कालिकता:",
+    low: "निम्न",
+    medium: "मध्यम",
+    high: "उच्च/गंभीर",
+    need: "आवश्यकता"
+  },
+  bn: {
+    keyRequired: "গুগল ম্যাপস এপিআই কী প্রয়োজন",
+    keyDesc: "ইন্টারেক্টিভ হিটম্যাপ এবং রিয়েল-টাইম বিভাগ বিশ্লেষণ আনলক করতে গুগল ক্লাউড কনসোল থেকে এপিআই কী নিন।",
+    howToAdd: "আপনার এপিআই কী যোগ করতে:",
+    getApiKey: "একটি এপিআই কী পান: ",
+    gmapsStart: "গুগল ম্যাপস স্টার্ট",
+    openSettings: "সেটিংস খুলুন (⚙️ গিয়ার আইকন, ডানদিকের কোণায়)",
+    goSecrets: "Secrets-এ যান",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY নামে একটি সিক্রেট যোগ করুন",
+    rebuildDesc: "সংরক্ষণের পরে অ্যাপটি স্বয়ংক্রিয়ভাবে পুনর্নির্মিত হবে।",
+    citywideAnalytics: "শহরব্যাপী বিশ্লেষণ",
+    visualizingSub: "অভিযোগ ক্লাস্টার এবং পরিকাঠামো ঘাটতি ম্যাপিং:",
+    urgency: "অভিযোগের গুরুত্ব:",
+    low: "কম",
+    medium: "মাঝারি",
+    high: "উচ্চ/জরুরী",
+    need: "প্রয়োজন"
+  },
+  pa: {
+    keyRequired: "ਗੂਗਲ ਮੈਪਸ API ਕੁੰਜੀ ਦੀ ਲੋੜ ਹੈ",
+    keyDesc: "ਇੰਟਰਐਕਟਿਵ ਹੀਟਮੈਪ ਅਤੇ ਰੀਅਲ-ਟਾਈਮ ਵਿਸ਼ਲੇਸ਼ਣ ਨੂੰ ਅਨਲੌਕ ਕਰਨ ਲਈ ਗੂਗਲ ਕਲਾਉਡ ਕੰਸੋਲ ਤੋਂ API ਕੁੰਜੀ ਪ੍ਰਾਪਤ ਕਰੋ।",
+    howToAdd: "ਆਪਣੀ API ਕੁੰਜੀ ਜੋੜਨ ਲਈ:",
+    getApiKey: "ਇੱਕ API ਕੁੰਜੀ ਪ੍ਰਾਪਤ ਕਰੋ: ",
+    gmapsStart: "ਗੂਗਲ ਮੈਪਸ ਸਟਾਰਟ",
+    openSettings: "ਸੈਟਿੰਗਾਂ ਖੋਲ੍ਹੋ (⚙️ ਗੇਅਰ ਆਈਕਨ, ਉੱਪਰ ਸੱਜੇ ਕੋਨੇ)",
+    goSecrets: "Secrets 'ਤੇ ਜਾਓ",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY ਨਾਮ ਨਾਲ ਇੱਕ ਸੀਕਰੇਟ ਜੋੜੋ",
+    rebuildDesc: "ਸੀਕਰੇਟ ਸੁਰੱਖਿਅਤ ਕਰਨ ਤੋਂ ਬਾਅਦ ਐਪ ਆਪਣੇ ਆਪ ਮੁੜ ਬਣ ਜਾਵੇਗੀ।",
+    citywideAnalytics: "ਸ਼ਹਿਰ ਵਿਆਪੀ ਵਿਸ਼ਲੇਸ਼ਣ",
+    visualizingSub: "ਸ਼ਿਕਾਇਤ ਕਲੱਸਟਰਾਂ ਅਤੇ ਬੁਨਿਆਦੀ ਢਾਂਚੇ ਦੀਆਂ ਲੋੜਾਂ ਦੀ ਨਿਸ਼ਾਨਦੇਹੀ:",
+    urgency: "ਸ਼ਿਕਾਇਤ ਦੀ ਗੰਭੀਰਤਾ:",
+    low: "ਘੱਟ",
+    medium: "ਦਰਮਿਆਨੀ",
+    high: "ਉੱਚ/ਗੰਭੀਰ",
+    need: "ਲੋੜ"
+  },
+  te: {
+    keyRequired: "Google మ్యాప్స్ API కీ అవసరం",
+    keyDesc: "ఇంటరాక్టివ్ హీట్‌మ్యాప్‌లు మరియు నిజ-సమయ విశ్లేషణను అన్‌లాక్ చేయడానికి Google క్లౌడ్ కన్సోల్ నుండి API కీని పొందండి.",
+    howToAdd: "మీ API కీని జోడించడానికి:",
+    getApiKey: "API కీని పొందండి: ",
+    gmapsStart: "గూగుల్ మ్యాప్స్ స్టార్ట్",
+    openSettings: "సెట్టింగ్‌లను తెరవండి (⚙️ గేర్ చిహ్నం, కుడి ఎగువ మూల)",
+    goSecrets: "Secrets కు వెళ్ళండి",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY పేరుతో రహస్య కీ ని జోడించండి",
+    rebuildDesc: "రహస్య కీ ని సేవ్ చేసిన తర్వాత యాప్ స్వయంచాలకంగా రీబిల్డ్ అవుతుంది.",
+    citywideAnalytics: "నగరవ్యాప్త విశ్లేషణ",
+    visualizingSub: "ఫిర్యాదు క్లస్టర్లు మరియు మౌలిక సదుపాయాల కొరతల మ్యాపింగ్:",
+    urgency: "ఫిర్యాదు తీవ్రత:",
+    low: "తక్కువ",
+    medium: "మధ్యస్థం",
+    high: "అత్యవసరం",
+    need: "అవసరం"
+  },
+  ta: {
+    keyRequired: "கூகுள் மேப்ஸ் ஏபிஐ கீ தேவை",
+    keyDesc: "ஊடாடும் வரைபடம் மற்றும் நிகழ்நேர பகுப்பாய்வை இயக்க கூகுள் கிளவுட் கன்சோலில் இருந்து ஏபிஐ கீ பெறவும்.",
+    howToAdd: "ஏபிஐ கீயைச் சேர்க்க:",
+    getApiKey: "ஏபிஐ கீயைப் பெறவும்: ",
+    gmapsStart: "கூகுள் மேப்ஸ் தொடக்கம்",
+    openSettings: "அமைப்புகளைத் திறக்கவும் (⚙️ கியர் ஐகான், மேல் வலது மூலை)",
+    goSecrets: "Secrets பக்கத்திற்குச் செல்லவும்",
+    addSecret: "GOOGLE_MAPS_PLATFORM_KEY என்ற பெயரில் கீயைச் சேர்க்கவும்",
+    rebuildDesc: "சேமித்தவுடன் செயலி தானாகவே மீண்டும் கட்டமைக்கப்படும்.",
+    citywideAnalytics: "நகர அளவிலான பகுப்பாய்வு",
+    visualizingSub: "புகார் பகுதிகள் மற்றும் உள்கட்டமைப்பு தேவைகளின் வரைபடம்:",
+    urgency: "புகார் அவசரம்:",
+    low: "குறைந்த",
+    medium: "நடுத்தர",
+    high: "அதிக/அவசர",
+    need: "தேவை"
+  }
 };
 
 interface CityCenterMarkerProps {
@@ -110,20 +179,39 @@ const CityCenterMarker: React.FC<CityCenterMarkerProps> = ({ cityName, onCenterR
   return null;
 };
 
+interface LiveLocationControllerProps {
+  liveUserCoords: google.maps.LatLngLiteral | null | undefined;
+  onCenterSet: (coords: google.maps.LatLngLiteral) => void;
+}
+
+const LiveLocationController: React.FC<LiveLocationControllerProps> = ({ liveUserCoords, onCenterSet }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (liveUserCoords && map) {
+      onCenterSet(liveUserCoords);
+      map.setCenter(liveUserCoords);
+      map.setZoom(14);
+    }
+  }, [liveUserCoords, map, onCenterSet]);
+
+  return null;
+};
+
 export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   cityName,
-  wards,
   submissions,
-  selectedWardId,
-  onSelectWard,
+  liveUserCoords,
+  language = 'en',
 }) => {
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral | null>(null);
-  const [activeMetric, setActiveMetric] = useState<'submissions' | 'schools' | 'clinics' | 'water'>('submissions');
 
   // Trigger coordinate search when city name changes
   useEffect(() => {
     setMapCenter(null);
   }, [cityName]);
+
+  const t = mapTranslations[language] || mapTranslations['en'];
 
   if (!hasValidKey) {
     return (
@@ -131,310 +219,113 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         <div className="max-w-md space-y-4">
           <h2 className="text-xl font-bold text-slate-100 flex items-center justify-center gap-2">
             <MapPin className="w-5 h-5 text-rose-500 animate-bounce" />
-            Google Maps API Key Required
+            {t.keyRequired}
           </h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Get an API key from Google Cloud Console to unlock interactive spatial heatmaps, ward polygon overlays, and real-time division analysis.
+            {t.keyDesc}
           </p>
           <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 text-left space-y-2 text-xs">
-            <p><strong>To add your API key:</strong></p>
+            <p><strong>{t.howToAdd}</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-slate-350">
-              <li>Get an API key: <a href="https://console.cloud.google.com/google/maps-apis/start?utm_campaign=gmp-code-assist-ais" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">Google Maps Start</a></li>
-              <li>Open <strong>Settings</strong> (⚙️ gear icon, top-right corner)</li>
-              <li>Go to <strong>Secrets</strong></li>
-              <li>Add a secret named <code>GOOGLE_MAPS_PLATFORM_KEY</code></li>
+              <li>{t.getApiKey}<a href="https://console.cloud.google.com/google/maps-apis/start?utm_campaign=gmp-code-assist-ais" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">{t.gmapsStart}</a></li>
+              <li>{t.openSettings}</li>
+              <li>{t.goSecrets}</li>
+              <li>{t.addSecret}</li>
             </ol>
           </div>
-          <p className="text-[10px] text-slate-550">The app will rebuild automatically after saving the secret.</p>
+          <p className="text-[10px] text-slate-550">{t.rebuildDesc}</p>
         </div>
       </div>
     );
   }
 
-  // Calculate metric values
-  const getMetricValue = (ward: WardData) => {
-    if (activeMetric === 'submissions') {
-      return submissions.filter(sub => sub.ward.toLowerCase() === ward.name.toLowerCase()).length;
-    }
-    if (activeMetric === 'schools') {
-      return ward.infrastructureGaps.schools;
-    }
-    if (activeMetric === 'clinics') {
-      return ward.infrastructureGaps.clinics;
-    }
-    // water
-    return ward.infrastructureGaps.waterAccess;
-  };
-
-  const values = wards.map(getMetricValue);
-  const minValue = values.length > 0 ? Math.min(...values) : 0;
-  const maxValue = values.length > 0 ? Math.max(...values) : 10;
-
-  // Get color scale
-  const getMetricColor = (value: number) => {
-    if (maxValue === minValue) return '#06b6d4'; // default cyan
-    const ratio = (value - minValue) / (maxValue - minValue || 1);
-    if (ratio > 0.75) return '#ef4444'; // Red (High deficit/urgency)
-    if (ratio > 0.5) return '#f97316';  // Orange
-    if (ratio > 0.25) return '#eab308'; // Yellow
-    return '#10b981'; // Green (Low deficit/urgency)
-  };
-
-  // Helper to generate coordinates for a clean circle sector
-  const generateSectorPolygon = (center: google.maps.LatLngLiteral, index: number, total: number) => {
-    const points: google.maps.LatLngLiteral[] = [];
-    const anglePerSector = 360 / total;
-    const startAngle = index * anglePerSector;
-    const endAngle = (index + 1) * anglePerSector;
-    const radius = 0.04; // ~4.5km
-    const lngFactor = 1 / Math.cos((center.lat * Math.PI) / 180);
-
-    points.push(center);
-
-    const steps = 8;
-    for (let i = 0; i <= steps; i++) {
-      const angle = startAngle + (i * (endAngle - startAngle)) / steps;
-      const rad = (angle * Math.PI) / 180;
-      points.push({
-        lat: center.lat + Math.cos(rad) * radius,
-        lng: center.lng + Math.sin(rad) * radius * lngFactor,
-      });
-    }
-
-    return points;
-  };
-
-  // Helper to get midpoint of sector for placing marker
-  const getSectorLabelPosition = (center: google.maps.LatLngLiteral, index: number, total: number) => {
-    const anglePerSector = 360 / total;
-    const midAngle = index * anglePerSector + anglePerSector / 2;
-    const radius = 0.024; // ~60% out for label
-    const rad = (midAngle * Math.PI) / 180;
-    const lngFactor = 1 / Math.cos((center.lat * Math.PI) / 180);
-
-    return {
-      lat: center.lat + Math.cos(rad) * radius,
-      lng: center.lng + Math.sin(rad) * radius * lngFactor,
-    };
-  };
-
-  const selectedWard = wards.find(w => w.id === selectedWardId);
-
   return (
-    <div className="relative h-[550px] w-full rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+    <div className="flex flex-col md:relative md:h-[550px] w-full rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl p-4 md:p-0 gap-4 md:gap-0">
       {/* Floating control panel */}
-      <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-4 rounded-xl shadow-xl max-w-xs w-60 space-y-3 font-sans">
+      <div className="md:absolute md:top-4 md:left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-4 rounded-xl shadow-xl w-full md:w-60 space-y-3 font-sans text-xs">
         <div className="flex items-center gap-2 text-slate-100 font-bold text-xs uppercase tracking-wider">
           <Layers className="w-4 h-4 text-cyan-400" />
-          <span>Heatmap Layer</span>
+          <span>{t.citywideAnalytics}</span>
         </div>
-        <div className="grid grid-cols-1 gap-1 text-xs">
-          <button
-            onClick={() => setActiveMetric('submissions')}
-            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-              activeMetric === 'submissions'
-                ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-semibold'
-                : 'bg-slate-950/40 border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950/70'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-rose-400" />
-              <span>Submissions Density</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveMetric('schools')}
-            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-              activeMetric === 'schools'
-                ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-semibold'
-                : 'bg-slate-950/40 border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950/70'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
-              <span>School Gaps</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveMetric('clinics')}
-            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-              activeMetric === 'clinics'
-                ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-semibold'
-                : 'bg-slate-950/40 border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950/70'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Clinic Deficits</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveMetric('water')}
-            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-              activeMetric === 'water'
-                ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-semibold'
-                : 'bg-slate-950/40 border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950/70'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <Droplet className="w-3.5 h-3.5 text-blue-400" />
-              <span>Water Access Gaps</span>
-            </span>
-          </button>
+        <div className="text-[10px] text-slate-400 leading-relaxed">
+          {t.visualizingSub} {cityName}.
         </div>
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/95 backdrop-blur border border-slate-800/80 px-3 py-2 rounded-xl shadow-lg flex items-center gap-3 text-[10px] font-sans text-slate-300">
-        <span className="font-semibold text-slate-450 uppercase tracking-wide">Priority:</span>
+      <div className="md:absolute md:bottom-4 md:left-4 z-10 bg-slate-900/95 backdrop-blur border border-slate-800/80 px-3 py-2 rounded-xl shadow-lg flex flex-wrap items-center gap-3 text-[10px] font-sans text-slate-300">
+        <span className="font-semibold text-slate-450 uppercase tracking-wide">{t.urgency}</span>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-[#10b981]" />
-          <span>Low</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-[#eab308]" />
-          <span>Med-Low</span>
+          <span>{t.low}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-[#f97316]" />
-          <span>Med-High</span>
+          <span>{t.medium}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-[#ef4444]" />
-          <span>Critical</span>
+          <span>{t.high}</span>
         </div>
       </div>
 
-      {/* Ward Details Panel */}
-      {selectedWard && (
-        <div className="absolute top-4 right-4 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800 p-4 rounded-xl shadow-2xl max-w-xs w-64 space-y-3 font-sans text-xs">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div>
-              <h4 className="text-slate-100 font-bold text-sm tracking-tight">{selectedWard.name}</h4>
-              <p className="text-[10px] text-slate-450 uppercase tracking-wider font-semibold">Active Ward Insights</p>
-            </div>
-            <button
-              onClick={() => onSelectWard(null)}
-              className="text-slate-400 hover:text-slate-200 text-[10px] py-1 px-2 bg-slate-950/50 hover:bg-slate-950 border border-slate-800 rounded-md transition-colors"
-            >
-              Clear
-            </button>
-          </div>
-          
-          <div className="space-y-1.5 text-slate-300">
-            <div className="flex justify-between">
-              <span className="text-slate-455">Population:</span>
-              <span className="text-slate-100 font-medium">{selectedWard.population.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-455">Avg Income Tier:</span>
-              <span className="text-slate-100 font-medium">{selectedWard.avgIncome}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-455">Elderly Ratio:</span>
-              <span className="text-slate-100 font-medium">{selectedWard.elderlyRatio}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-455">Student Ratio:</span>
-              <span className="text-slate-100 font-medium">{selectedWard.studentRatio}%</span>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-800 pt-2 space-y-1.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Infrastructure Gap Metrics</span>
-            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-              <div className="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60">
-                <span className="text-slate-450 block">School Deficit</span>
-                <span className="text-cyan-400 font-bold text-xs">{selectedWard.infrastructureGaps.schools}/10</span>
-              </div>
-              <div className="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60">
-                <span className="text-slate-450 block">Clinics Deficit</span>
-                <span className="text-cyan-400 font-bold text-xs">{selectedWard.infrastructureGaps.clinics}/10</span>
-              </div>
-              <div className="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60">
-                <span className="text-slate-455 block">Water Deficit</span>
-                <span className="text-cyan-400 font-bold text-xs">{selectedWard.infrastructureGaps.waterAccess}%</span>
-              </div>
-              <div className="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60">
-                <span className="text-slate-455 block">Road Quality</span>
-                <span className="text-cyan-400 font-bold text-xs">{selectedWard.infrastructureGaps.roadQuality}/10</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-800 pt-2 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Identified Local Needs</span>
-            <div className="flex flex-wrap gap-1">
-              {selectedWard.primaryNeeds.map((need, idx) => (
-                <span key={idx} className="bg-cyan-950/40 border border-cyan-900/30 text-cyan-300 text-[9px] px-2 py-0.5 rounded-md">
-                  {need}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Primary Map instance */}
-      <APIProvider apiKey={API_KEY} version="weekly">
+      {/* Map stage container */}
+      <div className="relative h-[380px] md:h-full w-full rounded-xl md:rounded-none overflow-hidden border border-slate-800/60 md:border-none">
         <Map
           defaultCenter={{ lat: 20.5937, lng: 78.9629 }}
           defaultZoom={5}
           mapId="DEMO_MAP_ID"
           disableDefaultUI={true}
-          internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
           style={{ width: '100%', height: '100%' }}
         >
           <CityCenterMarker cityName={cityName} onCenterResolved={setMapCenter} />
+          <LiveLocationController liveUserCoords={liveUserCoords} onCenterSet={setMapCenter} />
 
-          {/* Render polygon overlay layers if city center is resolved */}
-          {mapCenter &&
-            wards.map((ward, index) => {
-              const sectorPaths = generateSectorPolygon(mapCenter, index, wards.length);
-              const labelPosition = getSectorLabelPosition(mapCenter, index, wards.length);
-              const metricValue = getMetricValue(ward);
-              const baseColor = getMetricColor(metricValue);
-              
-              const isSelected = selectedWardId === ward.id;
-              const fillOpacity = isSelected ? 0.65 : 0.35;
-              const strokeWeight = isSelected ? 3 : 1.5;
-              const strokeColor = isSelected ? '#ffffff' : baseColor;
+          {liveUserCoords && (
+            <AdvancedMarker position={liveUserCoords}>
+              <div className="relative flex items-center justify-center z-50">
+                <span className="absolute inline-flex h-8 w-8 rounded-full bg-cyan-400/40 opacity-75 animate-ping"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500 border-2 border-slate-950 shadow-lg shadow-cyan-950"></span>
+              </div>
+            </AdvancedMarker>
+          )}
 
+          {submissions.map((sub) => {
+            if (sub.latitude && sub.longitude) {
+              const pinColor = sub.urgency === 'High' ? '#ef4444' : sub.urgency === 'Medium' ? '#f97316' : '#10b981';
               return (
-                <React.Fragment key={ward.id}>
-                  {/* Sector Polygon Layer */}
-                  <Polygon
-                    paths={sectorPaths}
-                    fillColor={baseColor}
-                    fillOpacity={fillOpacity}
-                    strokeColor={strokeColor}
-                    strokeOpacity={0.8}
-                    strokeWeight={strokeWeight}
-                    onClick={() => onSelectWard(selectedWardId === ward.id ? null : ward.id)}
-                  />
-
-                  {/* Ward Label Badge AdvancedMarker */}
-                  <AdvancedMarker
-                    position={labelPosition}
-                    onClick={() => onSelectWard(selectedWardId === ward.id ? null : ward.id)}
-                  >
-                    <div className={`px-2 py-1 bg-slate-900/90 hover:bg-slate-900 border ${
-                      isSelected ? 'border-cyan-400 shadow-cyan-500/20 shadow-md' : 'border-slate-800'
-                    } rounded-md flex items-center gap-1 cursor-pointer transition-all select-none`}>
-                      <span className="text-[9px] font-bold text-slate-100 whitespace-nowrap">{ward.name}</span>
-                      <span
-                        className="text-[8px] px-1 rounded-sm text-white font-mono font-bold"
-                        style={{ backgroundColor: baseColor }}
-                      >
-                        {metricValue}
-                      </span>
+                <AdvancedMarker key={`sub-pin-${sub.id}`} position={{ lat: sub.latitude, lng: sub.longitude }}>
+                  <div className="group relative flex items-center justify-center cursor-pointer select-none">
+                    {sub.urgency === 'High' && (
+                      <span className="absolute inline-flex h-5 w-5 rounded-full bg-red-400/30 animate-pulse"></span>
+                    )}
+                    <div 
+                      className="w-3.5 h-3.5 rounded-full border border-white shadow-md hover:scale-125 transition-all flex items-center justify-center"
+                      style={{ backgroundColor: pinColor }}
+                    >
+                      <span className="w-1 h-1 bg-white rounded-full"></span>
                     </div>
-                  </AdvancedMarker>
-                </React.Fragment>
+                    
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 shadow-2xl z-50 text-xs w-48 space-y-1.5 backdrop-blur-sm pointer-events-none">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+                        <span className="font-bold text-slate-200 truncate pr-1">{sub.name}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-300 line-clamp-2 leading-relaxed">
+                        "{sub.originalText}"
+                      </p>
+                      <div className="flex items-center justify-between text-[8px] font-mono font-bold pt-0.5">
+                        <span className="text-cyan-400 uppercase">{sub.category}</span>
+                        <span style={{ color: pinColor }}>{sub.urgency} {t.need}</span>
+                      </div>
+                    </div>
+                  </div>
+                </AdvancedMarker>
               );
-            })}
+            }
+            return null;
+          })}
         </Map>
-      </APIProvider>
+      </div>
     </div>
   );
 };

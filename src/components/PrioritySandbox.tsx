@@ -7,13 +7,188 @@ interface PrioritySandboxProps {
   projects: ProposedProject[];
   onSelectProjectForReport: (project: ProposedProject) => void;
   selectedProject: ProposedProject | null;
+  language?: string;
 }
+
+const sandboxTranslations: Record<string, any> = {
+  en: {
+    title: "Prioritization Decision Deck",
+    subtitle: "Adjust strategic weights below to compute real-time priority scores and re-rank development proposals in real-time.",
+    coreActive: "DECISION CORE ACTIVE",
+    citizenDensity: "Citizen Density",
+    citizenDensityDesc: "Citizen submission frequency & urgency",
+    infraDeficit: "Infrastructure Deficit",
+    infraDeficitDesc: "Physical school, clinic, or utility shortfalls",
+    demoNeed: "Demographic Need",
+    demoNeedDesc: "Emphasis on students, elderly & low-income layers",
+    costEfficiency: "Cost Efficiency",
+    costEfficiencyDesc: "Prioritizes high public benefit per budget Lakh",
+    rankedAllocations: "RANKED DEVELOPMENT ALLOCATIONS",
+    stable: "STABLE",
+    general: "GENERAL",
+    feedbacks: "CITIZEN FEEDBACKS:",
+    demandRank: "DEMAND RANK:",
+    gapReduction: "GAP REDUCTION BENEFIT:",
+    estimatedCost: "ESTIMATED COST:",
+    lakhs: "LAKHS",
+    priorityIndex: "Priority Index",
+    selected: "Selected",
+    buildProposal: "Build Proposal"
+  },
+  ml: {
+    title: "മുൻഗണനാ നിർണ്ണയ ഡെക്ക്",
+    subtitle: "തത്സമയ മുൻഗണനാ സ്‌കോറുകൾ കണക്കാക്കുന്നതിനും വികസന നിർദ്ദേശങ്ങൾ തരംതിരിക്കുന്നതിനും തന്ത്രപരമായ മുൻഗണനകൾ ക്രമീകരിക്കുക.",
+    coreActive: "തീരുമാന കേന്ദ്രം സജീവം",
+    citizenDensity: "ജനസാന്ദ്രത",
+    citizenDensityDesc: "പൗരന്മാരുടെ നിർദ്ദേശങ്ങളുടെ ആവൃത്തിയും അടിയന്തിരതയും",
+    infraDeficit: "അടിസ്ഥാന സൗകര്യ കമ്മി",
+    infraDeficitDesc: "സ്കൂൾ, ക്ലിനിക് അല്ലെങ്കിൽ യൂട്ടിലിറ്റി എന്നിവയിലെ കുറവുകൾ",
+    demoNeed: "ജനസംഖ്യാപരമായ ആവശ്യം",
+    demoNeedDesc: "വിദ്യാർത്ഥികൾ, പ്രായമായവർ, കുറഞ്ഞ വരുമാനമുള്ളവർ എന്നിവർക്ക് മുൻഗണന",
+    costEfficiency: "ചെലവ് കാര്യക്ഷമത",
+    costEfficiencyDesc: "കുറഞ്ഞ ചെലവിൽ കൂടുതൽ പൗരന്മാർക്ക് പ്രയോജനപ്പെടുന്ന പദ്ധതികൾ",
+    rankedAllocations: "മുൻഗണനാ ക്രമത്തിലുള്ള വികസന പദ്ധതികൾ",
+    stable: "സ്ഥിരതയുള്ളത്",
+    general: "പൊതുവായത്",
+    feedbacks: "പൗരന്മാരുടെ പ്രതികരണങ്ങൾ:",
+    demandRank: "ആവശ്യകതാ റാങ്ക്:",
+    gapReduction: "കുറവുകൾ പരിഹരിക്കുന്ന തോത്:",
+    estimatedCost: "പ്രതീക്ഷിക്കുന്ന ചെലവ്:",
+    lakhs: "ലക്ഷം രൂപ",
+    priorityIndex: "മുൻഗണനാ സൂചിക",
+    selected: "തിരഞ്ഞെടുത്തു",
+    buildProposal: "റിപ്പോർട്ട് തയ്യാറാക്കുക"
+  },
+  hi: {
+    title: "प्राथमिकता निर्धारण निर्णय डेक",
+    subtitle: "वास्तविक समय में प्राथमिकता स्कोर की गणना करने और विकास प्रस्तावों को फिर से रैंक करने के लिए रणनीतिक भार को समायोजित करें।",
+    coreActive: "निर्णय कोर सक्रिय",
+    citizenDensity: "नागरिक घनत्व",
+    citizenDensityDesc: "नागरिक सबमिशन आवृत्ति और तात्कालिकता",
+    infraDeficit: "बुनियादी ढांचा घाटा",
+    infraDeficitDesc: "भौतिक स्कूल, क्लिनिक, या उपयोगिता की कमी",
+    demoNeed: "जनसांख्यिकीय आवश्यकता",
+    demoNeedDesc: "छात्रों, बुजुर्गों और कम आय वाले स्तरों पर जोर",
+    costEfficiency: "लागत दक्षता",
+    costEfficiencyDesc: "बजट लाख प्रति उच्च सार्वजनिक लाभ को प्राथमिकता देता है",
+    rankedAllocations: "रैंक वाले विकास आवंटन",
+    stable: "स्थिर",
+    general: "सामान्य",
+    feedbacks: "नागरिक प्रतिक्रियाएं:",
+    demandRank: "मांग रैंक:",
+    gapReduction: "घाटा कमी लाभ:",
+    estimatedCost: "अनुमानित लागत:",
+    lakhs: "लाख",
+    priorityIndex: "प्राथमिकता सूचकांक",
+    selected: "चयनित",
+    buildProposal: "प्रस्ताव बनाएं"
+  },
+  bn: {
+    title: "অগ্রাধিকার নির্ধারণ সিদ্ধান্ত ডেক",
+    subtitle: "রিয়েল-টাইমে অগ্রাধিকার স্কোর গণনা করতে এবং উন্নয়ন প্রস্তাবগুলি পুনরায় র্যাঙ্ক করতে কৌশলগত অনুপাতগুলি সামঞ্জস্য করুন।",
+    coreActive: "সিদ্ধান্ত কোর সক্রিয়",
+    citizenDensity: "নাগরিক ঘনত্ব",
+    citizenDensityDesc: "নাগরিক আবেদন ফ্রিকোয়েন্সি এবং জরুরীতা",
+    infraDeficit: "অবকাঠামো ঘাটতি",
+    infraDeficitDesc: "স্কুল, ক্লিনিক বা ইউটিলিটি ঘাটতি",
+    demoNeed: "জনসংখ্যাতাত্ত্বিক প্রয়োজন",
+    demoNeedDesc: "ছাত্র, বয়স্ক এবং নিম্ন আয়ের স্তরের উপর জোর",
+    costEfficiency: "ব্যয় দক্ষতা",
+    costEfficiencyDesc: "বাজেট লাখ প্রতি উচ্চ জনস্বার্থ অগ্রাধিকার দেয়",
+    rankedAllocations: "র‍্যাঙ্কযুক্ত উন্নয়ন বরাদ্দ",
+    stable: "স্থির",
+    general: "সাধারণ",
+    feedbacks: "নাগরিক প্রতিক্রিয়া:",
+    demandRank: "চাহিদা র‍্যাঙ্ক:",
+    gapReduction: "ঘাটতি হ্রাস সুবিধা:",
+    estimatedCost: "আনুমানিক ব্যয়:",
+    lakhs: "লক্ষ",
+    priorityIndex: "অগ্রাধিকার সূচক",
+    selected: "নির্বাচিত",
+    buildProposal: "প্রস্তাব তৈরি করুন"
+  },
+  pa: {
+    title: "ਪ੍ਰਾਥਮਿਕਤਾ ਨਿਰਧਾਰਨ ਡੈੱਕ",
+    subtitle: "ਰੀਅਲ-ਟਾਈਮ ਵਿੱਚ ਪ੍ਰਾਥਮਿਕਤਾ ਸਕੋਰ ਦੀ ਗਣਨਾ ਕਰਨ ਅਤੇ ਵਿਕਾਸ ਪ੍ਰਸਤਾਵਾਂ ਨੂੰ ਦੁਬਾਰਾ ਰੈਂਕ ਦੇਣ ਲਈ ਰਣਨੀਤਕ ਭਾਰ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰੋ।",
+    coreActive: "ਫੈਸਲਾ ਕੋਰ ਸਰਗਰਮ",
+    citizenDensity: "ਨਾਗਰਿਕ ਘਣਤਾ",
+    citizenDensityDesc: "ਨਾਗਰਿਕ ਸਬਮਿਸ਼ਨ ਬਾਰੰਬਾਰਤਾ ਅਤੇ ਜ਼ਰੂਰੀਤਾ",
+    infraDeficit: "ਬੁਨਿਆਦੀ ਢਾਂਚਾ ਘਾਟਾ",
+    infraDeficitDesc: "ਸਕੂਲ, ਕਲੀਨਿਕ, ਜਾਂ ਸਹੂਲਤਾਂ ਦੀ ਕਮੀ",
+    demoNeed: "ਜਨਸੰਖਿਆ ਦੀ ਲੋੜ",
+    demoNeedDesc: "ਵਿਦਿਆਰਥੀਆਂ, ਬਜ਼ੁਰਗਾਂ ਅਤੇ ਘੱਟ ਆਮਦਨੀ ਵਾਲੇ ਵਰਗਾਂ 'ਤੇ ਜ਼ੋਰ",
+    costEfficiency: "ਲਾਗਤ ਕੁਸ਼ਲਤਾ",
+    costEfficiencyDesc: "ਪ੍ਰਤੀ ਬਜਟ ਲੱਖ ਉੱਚ ਜਨਤਕ ਲਾਭ ਨੂੰ ਤਰਜੀਹ ਦਿੰਦਾ ਹੈ",
+    rankedAllocations: "ਰੈਂਕ ਵਾਲੇ ਵਿਕਾਸ ਅਲਾਟਮੈਂਟ",
+    stable: "ਸਥਿਰ",
+    general: "ਆਮ",
+    feedbacks: "ਨਾਗਰਿਕ ਪ੍ਰਤੀਕਿਰਿਆਵਾਂ:",
+    demandRank: "ਮੰਗ ਰੈਂਕ:",
+    gapReduction: "ਘਾਟਾ ਘਟਾਉਣ ਦਾ ਲਾਭ:",
+    estimatedCost: "ਅਨੁਮਾਨਿਤ ਲਾਗਤ:",
+    lakhs: "ਲੱਖ",
+    priorityIndex: "ਪ੍ਰਾਥਮਿਕਤਾ ਸੂਚਕਾਂਕ",
+    selected: "ਚੁਣਿਆ ਗਿਆ",
+    buildProposal: "ਪ੍ਰਸਤਾਵ ਬਣਾਓ"
+  },
+  te: {
+    title: "ప్రాధాన్యత నిర్ణయ డెక్",
+    subtitle: "రియల్-టైమ్‌లో ప్రాధాన్యత స్కోర్‌లను లెక్కించడానికి మరియు అభివృద్ధి ప్రతిపాదనలను మళ్లీ ర్యాంక్ చేయడానికి వ్యూహాత్మక ప్రాధాన్యతలను సర్దుబాటు చేయండి.",
+    coreActive: "నిర్ణయ కేంద్రం క్రియాశీలంగా ఉంది",
+    citizenDensity: "పౌరుల సాంద్రత",
+    citizenDensityDesc: "పౌరుల ప్రతిపాదనల ఫ్రీక్వెన్సీ & అత్యవసరత",
+    infraDeficit: "మౌలిక సదుపాయాల లోటు",
+    infraDeficitDesc: "పాఠశాల, క్లినిక్ లేదా యుటిలిటీ కొరతలు",
+    demoNeed: "జనాభా అవసరం",
+    demoNeedDesc: "విద్యార్థులు, వృద్ధులు & తక్కువ ఆదాయ వర్గాలపై ప్రాధాన్యత",
+    costEfficiency: "ఖర్చు సామర్థ్యం",
+    costEfficiencyDesc: "బడ్జెట్ లక్షకు అధిక ప్రజా ప్రయోజనాలకు ప్రాధాన్యత ఇస్తుంది",
+    rankedAllocations: "ర్యాంక్ చేయబడిన అభివృద్ధి కేటాయింపులు",
+    stable: "స్థిరంగా ఉంది",
+    general: "సాధారణం",
+    feedbacks: "పౌరుల అభిప్రాయాలు:",
+    demandRank: "డిమాండ్ ర్యాంక్:",
+    gapReduction: "లోటు తగ్గింపు ప్రయోజనం:",
+    estimatedCost: "అంచనా ఖర్చు:",
+    lakhs: "లక్షలు",
+    priorityIndex: "ప్రాధాన్యత సూచిక",
+    selected: "ఎంపిక చేయబడింది",
+    buildProposal: "ప్రతిపాదనను రూపొందించండి"
+  },
+  ta: {
+    title: "முன்னுரிமை முடிவு தளம்",
+    subtitle: "உண்மையான நேரத்தில் முன்னுரிமை மதிப்பெண்களைக் கணக்கிடவும் மற்றும் வளர்ச்சி முன்மொழிவுகளை வரிசைப்படுத்தவும் முன்னுரிமைகளை மாற்றியமைக்கவும்.",
+    coreActive: "முடிவு மையம் செயலில் உள்ளது",
+    citizenDensity: "குடிமக்கள் அடர்த்தி",
+    citizenDensityDesc: "குடிமக்கள் சமர்ப்பிப்புகளின் அதிர்வெண் மற்றும் அவசரம்",
+    infraDeficit: "கட்டமைப்பு பற்றாக்குறை",
+    infraDeficitDesc: "பள்ளி, மருத்துவமனை அல்லது பொது பயன்பாட்டு பற்றாக்குறைகள்",
+    demoNeed: "மக்கள்தொகை தேவை",
+    demoNeedDesc: "மாணவர்கள், முதியவர்கள் மற்றும் குறைந்த வருமானம் கொண்ட பிரிவினருக்கு முக்கியத்துவம்",
+    costEfficiency: "செலவு திறன்",
+    costEfficiencyDesc: "குறைந்த செலவில் அதிக பொதுமக்களுக்கு பயனளிக்கும் திட்டங்களுக்கு முன்னுரிமை",
+    rankedAllocations: "முன்னுரிமை வரிசைப்படுத்தப்பட்ட வளர்ச்சி ஒதுக்கீடுகள்",
+    stable: "மாற்றമില്ലாதது",
+    general: "பொதுவானது",
+    feedbacks: "குடிமக்கள் கருத்துக்கள்:",
+    demandRank: "தேவை தரவரிசை:",
+    gapReduction: "பற்றாக்குறை குறைப்பு பலன்:",
+    estimatedCost: "மதிப்பிடப்பட்ட செலவு:",
+    lakhs: "லட்சம்",
+    priorityIndex: "முன்னுரிமை குறியீடு",
+    selected: "தேர்ந்தெடுக்கப்பட்டது",
+    buildProposal: "முன்மொழிவை உருவாக்கு"
+  }
+};
 
 export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
   projects,
   onSelectProjectForReport,
   selectedProject,
+  language = 'en',
 }) => {
+  const t = sandboxTranslations[language] || sandboxTranslations['en'];
+
   const [weights, setWeights] = useState<PrioritizationWeights>({
     citizenDemand: 0.4,
     infrastructureGap: 0.3,
@@ -88,15 +263,15 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
         <div>
           <div className="flex items-center gap-2 text-cyan-400 font-display font-bold uppercase tracking-wide">
             <Sliders className="w-5 h-5 text-cyan-400" />
-            Prioritization Decision Deck
+            {t.title}
           </div>
           <p className="text-xs text-slate-400 font-sans mt-0.5">
-            Adjust strategic weights below to compute real-time priority scores and re-rank development proposals in real-time.
+            {t.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1 rounded-full self-start font-bold uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
-          DECISION CORE ACTIVE
+          {t.coreActive}
         </div>
       </div>
 
@@ -105,7 +280,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
         {/* Slider 1 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300 font-mono uppercase tracking-wide">
-            <span>Citizen Density</span>
+            <span>{t.citizenDensity}</span>
             <span className="font-mono text-cyan-400 font-bold">{Math.round(weights.citizenDemand * 100)}%</span>
           </div>
           <input
@@ -117,13 +292,13 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
             onChange={(e) => handleWeightChange('citizenDemand', Number(e.target.value) / 100)}
             className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-cyan-500"
           />
-          <p className="text-[10px] text-slate-500 font-sans">Citizen submission frequency & urgency</p>
+          <p className="text-[10px] text-slate-500 font-sans">{t.citizenDensityDesc}</p>
         </div>
 
         {/* Slider 2 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300 font-mono uppercase tracking-wide">
-            <span>Infrastructure Deficit</span>
+            <span>{t.infraDeficit}</span>
             <span className="font-mono text-cyan-400 font-bold">{Math.round(weights.infrastructureGap * 100)}%</span>
           </div>
           <input
@@ -135,13 +310,13 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
             onChange={(e) => handleWeightChange('infrastructureGap', Number(e.target.value) / 100)}
             className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-cyan-500"
           />
-          <p className="text-[10px] text-slate-500 font-sans">Physical school, clinic, or utility shortfalls</p>
+          <p className="text-[10px] text-slate-500 font-sans">{t.infraDeficitDesc}</p>
         </div>
 
         {/* Slider 3 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300 font-mono uppercase tracking-wide">
-            <span>Demographic Need</span>
+            <span>{t.demoNeed}</span>
             <span className="font-mono text-cyan-400 font-bold">{Math.round(weights.demographicNeed * 100)}%</span>
           </div>
           <input
@@ -153,13 +328,13 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
             onChange={(e) => handleWeightChange('demographicNeed', Number(e.target.value) / 100)}
             className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-cyan-500"
           />
-          <p className="text-[10px] text-slate-500 font-sans">Emphasis on students, elderly & low-income layers</p>
+          <p className="text-[10px] text-slate-500 font-sans">{t.demoNeedDesc}</p>
         </div>
 
         {/* Slider 4 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300 font-mono uppercase tracking-wide">
-            <span>Cost Efficiency</span>
+            <span>{t.costEfficiency}</span>
             <span className="font-mono text-cyan-400 font-bold">{Math.round(weights.costEfficiency * 100)}%</span>
           </div>
           <input
@@ -171,7 +346,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
             onChange={(e) => handleWeightChange('costEfficiency', Number(e.target.value) / 100)}
             className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-cyan-500"
           />
-          <p className="text-[10px] text-slate-500 font-sans">Prioritizes high public benefit per budget Lakh</p>
+          <p className="text-[10px] text-slate-500 font-sans">{t.costEfficiencyDesc}</p>
         </div>
       </div>
 
@@ -179,7 +354,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
       <div className="space-y-3">
         <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
           <Layers className="w-3.5 h-3.5 text-cyan-400" />
-          RANKED DEVELOPMENT ALLOCATIONS ({sortedProjects.length})
+          {t.rankedAllocations} ({sortedProjects.length})
         </h4>
 
         <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
@@ -223,7 +398,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                       )}
                       {proj.rankChange === 0 && (
                         <span className="text-[8px] text-slate-500 font-semibold mt-1 font-mono">
-                          STABLE
+                          {t.stable}
                         </span>
                       )}
                     </div>
@@ -234,7 +409,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                           {proj.title}
                         </span>
                         <span className="text-[9px] bg-slate-900 border border-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
-                          {proj.ward.toUpperCase()}
+                          {proj.constituency?.toUpperCase() || t.general}
                         </span>
                         <span className="text-[9px] bg-cyan-950/50 text-cyan-400 px-2 py-0.5 border border-cyan-800/40 rounded font-mono uppercase font-bold">
                           {proj.category}
@@ -246,10 +421,10 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                       
                       {/* Core Metrics Summary row */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1.5 text-[10px] text-slate-500 font-mono">
-                        <span>CITIZEN FEEDBACKS: <strong className="text-slate-300">{proj.citizenSubmissionsCount}</strong></span>
-                        <span>DEMAND RANK: <strong className="text-cyan-400 font-bold">{proj.demandIndex}/100</strong></span>
-                        <span>GAP REDUCTION BENEFIT: <strong className="text-slate-300">{proj.infrastructureBenefitScore}/100</strong></span>
-                        <span>ESTIMATED COST: <strong className="text-yellow-500 font-bold">₹{proj.estimatedCost} LAKHS</strong></span>
+                        <span>{t.feedbacks} <strong className="text-slate-300">{proj.citizenSubmissionsCount}</strong></span>
+                        <span>{t.demandRank} <strong className="text-cyan-400 font-bold">{proj.demandIndex}/100</strong></span>
+                        <span>{t.gapReduction} <strong className="text-slate-300">{proj.infrastructureBenefitScore}/100</strong></span>
+                        <span>{t.estimatedCost} <strong className="text-yellow-500 font-bold">₹{proj.estimatedCost} {t.lakhs}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -257,7 +432,7 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                   {/* Priority score & action btn */}
                   <div className="flex md:flex-col items-center justify-between md:items-end gap-3 md:justify-center pl-10 md:pl-0 border-t md:border-t-0 md:border-l border-slate-800/80 md:pl-4 pt-3 md:pt-0">
                     <div className="text-left md:text-right">
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Priority Index</span>
+                      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">{t.priorityIndex}</span>
                       <p className="text-2xl font-black font-mono text-cyan-400 leading-none">
                         {proj.score.toFixed(1)}
                       </p>
@@ -275,12 +450,12 @@ export const PrioritySandbox: React.FC<PrioritySandboxProps> = ({
                       {isSelected ? (
                         <>
                           <CheckCircle className="w-3.5 h-3.5 text-cyan-300" />
-                          Selected
+                          {t.selected}
                         </>
                       ) : (
                         <>
                           <FileText className="w-3.5 h-3.5" />
-                          Build Proposal
+                          {t.buildProposal}
                         </>
                       )}
                     </button>

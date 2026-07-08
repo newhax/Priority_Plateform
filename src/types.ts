@@ -7,44 +7,36 @@ export interface Submission {
   originalText: string;
   translatedText: string;
   category: 'Education' | 'Healthcare' | 'Roads & Transport' | 'Sanitation' | 'Water Supply' | 'Vocations';
-  ward: string;
   urgency: 'High' | 'Medium' | 'Low';
   timestamp: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
   impactCount: number; // estimated people affected
   audioUrl?: string;
-  photoUrl?: string;
+  photoUrls?: string[];
   status: 'Received' | 'Reviewed' | 'Approved' | 'Actioned' | 'Rejected';
   aiSummary: string;
-}
-
-export interface WardData {
-  id: string;
-  name: string;
-  population: number;
-  avgIncome: 'Low' | 'Medium' | 'High';
-  elderlyRatio: number; // percentage
-  studentRatio: number; // percentage
-  primaryNeeds: string[];
-  infrastructureGaps: {
-    schools: number; // deficit metric
-    clinics: number;
-    waterAccess: number; // % without coverage
-    roadQuality: number; // scale 1-10 (lower is worse)
-  };
+  targetDepartment?: string;
+  suggestedActions?: string[];
+  latitude?: number;
+  longitude?: number;
+  locationVerified?: boolean;
+  state?: string;
+  constituency?: string;
+  isProposal?: boolean;
 }
 
 export interface ProposedProject {
   id: string;
   title: string;
   category: 'Education' | 'Healthcare' | 'Roads & Transport' | 'Sanitation' | 'Water Supply' | 'Vocations';
-  ward: string;
   estimatedCost: number; // in INR (Lakhs)
   infrastructureBenefitScore: number; // 0 - 100 based on gap filled
   demographicNeedScore: number; // 0 - 100 based on population composition
   demandIndex: number; // 0 - 100 based on citizen submissions count & urgency
   citizenSubmissionsCount: number;
   description: string;
+  state?: string;
+  constituency?: string;
 }
 
 export interface PrioritizationWeights {
