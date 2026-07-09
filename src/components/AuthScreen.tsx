@@ -1,5 +1,9 @@
+import { Footer } from './Footer';
 import React, { useState } from 'react';
+import { signInWithGoogle } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
+import { ShootingStars } from './ShootingStars';
+import { PointStars } from './PointStars';
 import { 
   Eye, 
   EyeOff, 
@@ -32,7 +36,7 @@ interface AuthScreenProps {
 const authTranslations: Record<string, any> = {
   en: {
     headerSubLabel: "National Constituency Engine",
-    title: "Citizen Development Portal",
+    title: "CITIZEN DEVELOPMENT PORTAL",
     description: "AI-driven collaborative pipeline linking members of parliament and local residents.",
     signInAccount: "Sign In Account",
     signInDesc: "Enter your credentials to manage your constituency portal.",
@@ -496,7 +500,34 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
   };
 
   // Quick preset demo login
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const user = await signInWithGoogle();
+      const citizen = {
+        firstName: user.displayName?.split(' ')[0] || 'User',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        email: user.email || '',
+        phone: user.phoneNumber || '',
+        gender: 'Not specified',
+        dob: '2000-01-01',
+        state: 'Kerala',
+        city: 'Thiruvananthapuram',
+        isAdmin: false
+      };
+      localStorage.setItem('mp_portal_current_user', JSON.stringify(citizen));
+      setLoading(false);
+      onAuthSuccess(citizen);
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || 'Failed to sign in with Google');
+    }
+  };
+
   const handleQuickDemoLogin = (role: 'mp' | 'citizen') => {
+
     if (role === 'mp') {
       const demoMP = {
         firstName: 'Abhinav',
@@ -530,20 +561,23 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
 
   return (
     <div id="auth-screen-container" className="min-h-screen bg-[#060608] flex flex-col justify-between items-center text-slate-100 font-sans p-4 relative overflow-hidden">
+      <PointStars />
+      <ShootingStars />
       
       {/* Decorative vector background meshes */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-cyan-950/20 rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-950/20 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-fuchsia-900/30 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-900/30 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-900/20 rounded-full blur-[160px] pointer-events-none -z-10" />
 
       {/* Header section with Portal Branding */}
       <div className="w-full max-w-md text-center pt-8 space-y-2 relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900/60 border border-slate-800/80 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <div className="inline-flex items-center gap-2">
+          
           <span className="text-[10px] font-mono tracking-wider font-extrabold text-cyan-400 uppercase">
             {t.headerSubLabel}
           </span>
         </div>
-        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-400 bg-clip-text text-transparent">
           {t.title}
         </h1>
         <p className="text-[11px] sm:text-xs text-slate-500 font-sans max-w-xs mx-auto">
@@ -575,8 +609,8 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
                 <div className="grid grid-cols-1 gap-3">
                   <button
                     type="button"
-                    onClick={() => handleQuickDemoLogin('citizen')}
-                    className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-zinc-800 bg-[#0f0f11] hover:bg-zinc-800 text-[11px] font-bold text-slate-200 transition-all cursor-pointer"
+                    onClick={handleGoogleSignIn}
+                    className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-zinc-800 bg-[#0f0f11] hover:bg-zinc-800 hover:-translate-y-1 hover:scale-105 hover:rotate-2 hover:shadow-lg hover:shadow-cyan-500/30 active:scale-95 duration-300 text-[11px] font-bold text-slate-200 transition-all cursor-pointer"
                   >
                     <GoogleIcon />
                     Google
@@ -612,19 +646,10 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                        {t.passwordLabel}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('mp')}
-                        className="text-[9px] text-cyan-400 hover:underline font-mono animate-pulse"
-                      >
-                        {t.demoAccess}
-                      </button>
-                    </div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                      {t.passwordLabel}
+                    </label>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
@@ -647,11 +672,11 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-white hover:bg-slate-100 text-black font-extrabold text-xs py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-white/5 active:scale-[0.98]"
+                    className="w-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 hover:from-violet-500 hover:via-fuchsia-400 hover:to-cyan-400 text-white font-extrabold text-xs py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(217,70,239,0.3)] hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(217,70,239,0.6)] active:scale-[0.98] active:translate-y-0"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-black" />
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
                         {t.signingIn}
                       </>
                     ) : (
@@ -688,23 +713,7 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
                   <p className="text-xs text-slate-400">{t.signUpDesc}</p>
                 </div>
 
-                {/* Social logins */}
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('citizen')}
-                    className="flex items-center justify-center py-2 px-4 rounded-xl border border-zinc-800 bg-[#0f0f11] hover:bg-zinc-800 text-[10px] font-bold text-slate-200 transition-all cursor-pointer"
-                  >
-                    <GoogleIcon />
-                    Google
-                  </button>
-                </div>
 
-                <div className="relative flex items-center py-0.5">
-                  <div className="flex-grow border-t border-zinc-800/60"></div>
-                  <span className="flex-shrink mx-3 text-[9px] font-mono text-slate-500 uppercase font-bold tracking-widest">{t.or}</span>
-                  <div className="flex-grow border-t border-zinc-800/60"></div>
-                </div>
 
                 <form onSubmit={handleSignUpSubmit} className="space-y-4">
                   {error && (
@@ -906,11 +915,11 @@ export function AuthScreen({ onAuthSuccess, language = 'en' }: AuthScreenProps) 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-white hover:bg-slate-100 text-black font-extrabold text-xs py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-white/5 active:scale-[0.98]"
+                    className="w-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 hover:from-violet-500 hover:via-fuchsia-400 hover:to-cyan-400 text-white font-extrabold text-xs py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(217,70,239,0.3)] hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(217,70,239,0.6)] active:scale-[0.98] active:translate-y-0"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-black" />
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
                         {t.creatingAccount}
                       </>
                     ) : (

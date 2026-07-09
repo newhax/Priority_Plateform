@@ -44,11 +44,12 @@
 
 /* Background grid styling */
 .cyber-grid {
-  background-size: 30px 30px;
+  background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
+
 
 /* Smooth continuous marquee scroll */
 @keyframes marquee-infinite {
@@ -66,4 +67,46 @@
   animation-play-state: paused;
 }
 
+
+
+@keyframes shooting-star {
+  0% {
+    transform: translate(0, 0) rotate(-45deg) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-1000px, 1000px) rotate(-45deg) scale(0);
+    opacity: 0;
+  }
+}
+
+.star-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.shooting-star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0));
+  border-radius: 999px;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1));
+  animation: shooting-star 3s linear infinite;
+  opacity: 0;
+}
 

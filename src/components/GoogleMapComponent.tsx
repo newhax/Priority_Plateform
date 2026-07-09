@@ -18,7 +18,7 @@ import {
   Award, 
   TrendingUp, 
   Users, 
-  AlertTriangle,
+  AlertTriangle, AlertCircle,
   Clock,
   Briefcase,
   HelpCircle,
@@ -897,7 +897,7 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               const pinColor = sub.urgency === 'High' ? '#ef4444' : sub.urgency === 'Medium' ? '#f97316' : '#10b981';
               const isSelected = selectedItemId === sub.id && selectedType === 'submission';
               return (
-                <AdvancedMarker key={`sub-pin-${sub.id}`} position={{ lat: sub.latitude!, lng: sub.longitude! }}>
+                <AdvancedMarker key={`sub-pin-${sub.id}`} position={{ lat: sub.latitude!, lng: sub.longitude! }} clickable={true} onClick={() => handleMarkerClick(sub.id, 'submission')}>
                   <div 
                     onClick={() => handleMarkerClick(sub.id, 'submission')}
                     className="relative flex items-center justify-center cursor-pointer group"
@@ -955,7 +955,7 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               const isSelected = selectedItemId === sub.id && selectedType === 'submission';
 
               return (
-                <AdvancedMarker key={`sub-hotspot-${sub.id}`} position={{ lat: sub.latitude!, lng: sub.longitude! }}>
+                <AdvancedMarker key={`sub-hotspot-${sub.id}`} position={{ lat: sub.latitude!, lng: sub.longitude! }} clickable={true} onClick={() => handleMarkerClick(sub.id, 'submission')}>
                   <div 
                     onClick={() => handleMarkerClick(sub.id, 'submission')}
                     className="relative flex items-center justify-center cursor-pointer group"
@@ -1015,7 +1015,7 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
                 {filteredProjects.map((proj) => {
                   const isSelected = selectedItemId === proj.id && selectedType === 'project';
                   return (
-                    <AdvancedMarker key={`proj-star-${proj.id}`} position={proj.coords!}>
+                    <AdvancedMarker key={`proj-star-${proj.id}`} position={proj.coords!} clickable={true} onClick={() => handleMarkerClick(proj.id, 'project')}>
                       <div 
                         onClick={() => handleMarkerClick(proj.id, 'project')}
                         className={`group relative flex items-center justify-center cursor-pointer transition-all duration-300 p-1.5 rounded-full border shadow-2xl ${
@@ -1102,164 +1102,187 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
           </div>
         </div>
 
+        
         {/* 3. SELECTED ITEM BOTTOM DETAIL SHEET */}
-        <div className="border-t border-slate-800/80 bg-slate-900/40 p-4 h-48 flex items-center justify-center transition-all">
+        <div className="border-t border-slate-800/80 bg-slate-900/95 backdrop-blur-md transition-all flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] overflow-hidden" style={{ minHeight: selectedItemData ? 'auto' : '12rem', maxHeight: selectedItemData ? '50vh' : '12rem' }}>
           {!selectedItemData ? (
-            <div className="flex flex-col items-center justify-center text-center space-y-2 p-4 text-slate-500">
+            <div className="flex flex-col items-center justify-center text-center space-y-2 p-8 text-slate-500 h-48">
               <Layers className="w-6 h-6 text-slate-700 animate-pulse" />
               <p className="text-xs max-w-md font-sans leading-relaxed">
-                {t.noItemSelected}
+                {t.selectMapItem}
               </p>
             </div>
           ) : selectedType === 'submission' ? (
-            // SUBMISSION DETAIL GRID
-            <div className="w-full h-full flex flex-col justify-between space-y-2" id="map-selected-submission-card">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-100 font-sans">
-                      {(selectedItemData as Submission).name}
-                    </span>
-                    <span className="text-[9px] font-mono font-bold bg-slate-800/80 border border-slate-750 text-slate-400 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
-                      {getMediumIcon((selectedItemData as Submission).inputType)}
-                      {getMediumLabel((selectedItemData as Submission).inputType)}
-                    </span>
-                    <span className="text-[9px] font-mono font-bold text-slate-500">
-                      {new Date((selectedItemData as Submission).timestamp).toLocaleDateString()}
-                    </span>
+            // DETAILED CITIZEN REPORT
+            <div className="w-full flex flex-col p-4 sm:p-6 overflow-y-auto">
+              <div className="flex items-start justify-between border-b border-slate-800/80 pb-4 mb-4">
+                <div className="flex gap-4 items-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-lg text-slate-300 shadow-inner">
+                    {(selectedItemData as Submission).name.charAt(0)}
                   </div>
-                  <p className="text-xs text-slate-350 line-clamp-2 mt-1 leading-relaxed">
-                    "{(selectedItemData as Submission).translatedText}"
-                  </p>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-100 mb-1">{(selectedItemData as Submission).name}</h3>
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs font-mono text-slate-400">
+                      <span>{new Date((selectedItemData as Submission).timestamp).toLocaleString()}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="text-cyan-400 border border-cyan-900/50 bg-cyan-950/30 px-1.5 py-0.5 rounded">{(selectedItemData as Submission).category}</span>
+                      <span className="flex items-center gap-1 ml-1 text-slate-300">
+                        {getMediumIcon((selectedItemData as Submission).inputType)}
+                        {getMediumLabel((selectedItemData as Submission).inputType)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <button 
                   onClick={() => { setSelectedItemId(null); setSelectedType(null); }}
-                  className="text-slate-500 hover:text-slate-300 p-1"
+                  className="text-slate-500 hover:text-slate-300 bg-slate-800/50 hover:bg-slate-700/50 p-2 rounded-full transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Bottom properties bar */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 border-t border-slate-850 pt-2 text-[10px] items-center">
-                <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.dept}:</span>
-                  <span className="font-bold text-cyan-400 truncate font-mono uppercase">
-                    {(selectedItemData as Submission).category}
-                  </span>
-                </div>
-                
-                <div className="md:col-span-2 flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.urgency}</span>
-                  <span 
-                    className="font-bold font-mono uppercase px-1.5 py-0.5 rounded-sm"
-                    style={{
-                      color: (selectedItemData as Submission).urgency === 'High' ? '#ef4444' : (selectedItemData as Submission).urgency === 'Medium' ? '#f97316' : '#10b981',
-                      backgroundColor: (selectedItemData as Submission).urgency === 'High' ? 'rgba(239, 68, 68, 0.1)' : (selectedItemData as Submission).urgency === 'Medium' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(16, 185, 129, 0.1)'
-                    }}
-                  >
-                    {(selectedItemData as Submission).urgency}
-                  </span>
-                </div>
-
-                <div className="md:col-span-2 flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.estimatedImpact}:</span>
-                  <span className="font-bold text-slate-200 font-mono flex items-center gap-0.5">
-                    <Users className="w-3.5 h-3.5 text-cyan-500" />
-                    {(selectedItemData as Submission).impactCount}
-                  </span>
-                </div>
-
-                <div className="md:col-span-3 flex items-center gap-1.5">
-                  {liveUserCoords && (selectedItemData as Submission).latitude && (selectedItemData as Submission).longitude && (
-                    <>
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                      <span className="font-bold text-emerald-400 font-mono">
-                        {getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!) < 1
-                          ? `${(getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!) * 1000).toFixed(0)}m away`
-                          : `${getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!).toFixed(1)} km away`
-                        }
-                      </span>
-                    </>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-4">
+                  <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800/50 shadow-inner">
+                    <h4 className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Original Report</h4>
+                    <p className="text-sm sm:text-base text-slate-300 leading-relaxed">"{(selectedItemData as Submission).originalText}"</p>
+                  </div>
+                  
+                  {((selectedItemData as Submission).translatedText && (selectedItemData as Submission).translatedText !== (selectedItemData as Submission).originalText) && (
+                    <div className="bg-cyan-950/20 p-4 rounded-xl border border-cyan-900/30">
+                      <h4 className="text-[10px] font-bold text-cyan-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" /> AI Translation
+                      </h4>
+                      <p className="text-sm sm:text-base text-slate-300 leading-relaxed">"{(selectedItemData as Submission).translatedText}"</p>
+                    </div>
+                  )}
+                  
+                  {/* Media Section if available */}
+                  {(selectedItemData as Submission).audioUrl && (
+                    <div className="bg-rose-950/20 p-4 rounded-xl border border-rose-900/30 flex items-center gap-4">
+                      <div className="w-12 h-12 shrink-0 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
+                        <Volume2 className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 w-full min-w-0">
+                        <h4 className="text-[10px] font-bold text-rose-400 mb-2 uppercase tracking-wider">Audio Evidence</h4>
+                        <audio controls src={(selectedItemData as Submission).audioUrl} className="w-full h-8" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(selectedItemData as Submission).photoUrls?.[0] && (
+                    <div className="bg-emerald-950/20 p-4 rounded-xl border border-emerald-900/30">
+                      <h4 className="text-[10px] font-bold text-emerald-500 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Camera className="w-3.5 h-3.5" /> Photographic Evidence
+                      </h4>
+                      <img src={(selectedItemData as Submission).photoUrls?.[0]} alt="Report evidence" className="w-full max-h-64 object-cover rounded-lg border border-slate-800 shadow-md" />
+                    </div>
                   )}
                 </div>
 
-                <div className="md:col-span-2 flex justify-end">
-                  <span className="text-[10px] font-bold text-emerald-400/90 hover:text-emerald-300 transition-all font-mono tracking-tight uppercase flex items-center gap-0.5 border border-emerald-500/20 px-2 py-1 rounded bg-emerald-500/5">
-                    <Clock className="w-3 h-3" />
-                    {(selectedItemData as Submission).status}
-                  </span>
+                <div className="space-y-3">
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Status</span>
+                    <span className="text-emerald-400 font-mono text-sm uppercase flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" /> {(selectedItemData as Submission).status}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Urgency</span>
+                    <span className="font-mono text-sm uppercase flex items-center gap-1.5" style={{ color: (selectedItemData as Submission).urgency === 'High' ? '#ef4444' : (selectedItemData as Submission).urgency === 'Medium' ? '#f97316' : '#10b981' }}>
+                      <AlertCircle className="w-4 h-4" /> {(selectedItemData as Submission).urgency}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Estimated Impact</span>
+                    <span className="text-cyan-400 font-mono text-sm flex items-center gap-1.5">
+                      <Users className="w-4 h-4" /> {(selectedItemData as Submission).impactCount} Citizens
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Distance</span>
+                    <span className="text-amber-400 font-mono text-sm flex items-center gap-1.5 truncate">
+                      <MapPin className="w-4 h-4 shrink-0" /> 
+                      {liveUserCoords && (selectedItemData as Submission).latitude && (selectedItemData as Submission).longitude 
+                        ? (getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!) < 1 
+                            ? `${(getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!) * 1000).toFixed(0)}m away`
+                            : `${getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as Submission).latitude!, (selectedItemData as Submission).longitude!).toFixed(1)} km away`)
+                        : "Mapped precisely"
+                      }
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
             // PROPOSED PROJECT DETAIL GRID
-            <div className="w-full h-full flex flex-col justify-between space-y-2" id="map-selected-project-card">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-mono font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded tracking-wide uppercase flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      ALIGNED SOLUTION
-                    </span>
-                    <span className="text-sm font-bold text-slate-100 font-sans">
-                      {(selectedItemData as ProposedProject).title}
-                    </span>
+            <div className="w-full flex flex-col p-4 sm:p-6 overflow-y-auto">
+              <div className="flex items-start justify-between border-b border-slate-800/80 pb-4 mb-4">
+                <div className="flex gap-4 items-center">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                    <Award className="w-6 h-6" />
                   </div>
-                  <p className="text-xs text-slate-350 line-clamp-2 mt-1 leading-relaxed">
-                    {(selectedItemData as ProposedProject).description}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[9px] font-mono font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded tracking-widest uppercase shadow-sm">
+                        PROPOSED PUBLIC WORK
+                      </span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-100 leading-tight">{(selectedItemData as ProposedProject).title}</h3>
+                  </div>
                 </div>
                 <button 
                   onClick={() => { setSelectedItemId(null); setSelectedType(null); }}
-                  className="text-slate-500 hover:text-slate-300 p-1"
+                  className="text-slate-500 hover:text-slate-300 bg-slate-800/50 hover:bg-slate-700/50 p-2 rounded-full transition-colors shrink-0 ml-4"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Bottom project metrics bar */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-2 border-t border-slate-850 pt-2 text-[10px] items-center">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.cost}:</span>
-                  <span className="font-bold text-amber-400 font-mono">
-                    ₹{(selectedItemData as ProposedProject).estimatedCost} Lakhs
-                  </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-4">
+                  <div className="bg-slate-950/60 p-5 rounded-xl border border-slate-800/60 shadow-inner">
+                    <h4 className="text-[10px] font-bold text-slate-500 mb-2.5 uppercase tracking-wider">Project Overview</h4>
+                    <p className="text-sm sm:text-base text-slate-300 leading-relaxed">{(selectedItemData as ProposedProject).description}</p>
+                  </div>
+                  
+                  <div className="bg-indigo-950/20 p-5 rounded-xl border border-indigo-900/40 shadow-inner">
+                    <h4 className="text-[10px] font-bold text-indigo-400 mb-2.5 uppercase tracking-wider flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" /> AI Impact Analysis & Justification
+                    </h4>
+                    <p className="text-sm sm:text-base text-slate-300 leading-relaxed">{((selectedItemData as ProposedProject) as any).aiJustification || (selectedItemData as ProposedProject).description}</p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.benefitScore}:</span>
-                  <span className="font-bold text-emerald-400 font-mono">
-                    {(selectedItemData as ProposedProject).infrastructureBenefitScore}/100
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="text-slate-500">{t.demandScore}:</span>
-                  <span className="font-bold text-cyan-400 font-mono flex items-center gap-0.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-cyan-500" />
-                    {(selectedItemData as ProposedProject).demandIndex}%
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {liveUserCoords && (selectedItemData as any).coords && (
-                    <>
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                      <span className="font-bold text-emerald-400 font-mono">
-                        {getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as any).coords!.lat, (selectedItemData as any).coords!.lng) < 1
-                          ? `${(getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as any).coords!.lat, (selectedItemData as any).coords!.lng) * 1000).toFixed(0)}m`
-                          : `${getDistance(liveUserCoords.lat, liveUserCoords.lng, (selectedItemData as any).coords!.lat, (selectedItemData as any).coords!.lng).toFixed(1)} km`
-                        }
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-1 font-mono text-[9px]">
-                  <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-1 rounded">
-                    {(selectedItemData as ProposedProject).citizenSubmissionsCount} REPORTS
-                  </span>
+                <div className="space-y-3">
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Estimated Budget</span>
+                    <span className="text-amber-400 font-mono text-lg font-bold">₹{(selectedItemData as ProposedProject).estimatedCost} Lakhs</span>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Benefit Score</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-400 font-mono text-lg font-bold">{(selectedItemData as ProposedProject).infrastructureBenefitScore}/100</span>
+                      <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(selectedItemData as ProposedProject).infrastructureBenefitScore}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Demand Index</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-cyan-400 font-mono text-lg font-bold">{(selectedItemData as ProposedProject).demandIndex}%</span>
+                      <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${(selectedItemData as ProposedProject).demandIndex}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Reports Linked</span>
+                    <span className="text-slate-300 font-mono text-sm flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-slate-400" /> {(selectedItemData as ProposedProject).citizenSubmissionsCount} Citizens
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1267,7 +1290,6 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         </div>
 
       </div>
-
     </div>
   );
 };

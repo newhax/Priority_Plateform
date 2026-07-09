@@ -21,19 +21,19 @@ export const ALL_INDIAN_LANGUAGES: LanguageOption[] = [
   { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', isSupported: true },
   { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', isSupported: true },
   { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', isSupported: true },
-  { code: 'ur', name: 'Urdu', nativeName: 'اُردُو', isSupported: false, fallback: 'hi' },
-  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', isSupported: false, fallback: 'hi' },
-  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', isSupported: false, fallback: 'hi' },
-  { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्', isSupported: false, fallback: 'hi' },
-  { code: 'ks', name: 'Kashmiri', nativeName: 'کٲшُر', isSupported: false, fallback: 'hi' },
-  { code: 'ne', name: 'Nepali', nativeName: 'नेपाली', isSupported: false, fallback: 'hi' },
-  { code: 'sd', name: 'Sindhi', nativeName: 'سنڌي', isSupported: false, fallback: 'hi' },
-  { code: 'kok', name: 'Konkani', nativeName: 'कोंकणी', isSupported: false, fallback: 'mr' },
-  { code: 'doi', name: 'Dogri', nativeName: 'डोगरी', isSupported: false, fallback: 'hi' },
-  { code: 'mni', name: 'Manipuri', nativeName: 'মৈতৈলোন', isSupported: false, fallback: 'en' },
-  { code: 'brx', name: 'Bodo', nativeName: 'बड़ो', isSupported: false, fallback: 'hi' },
-  { code: 'mai', name: 'Maithili', nativeName: 'मैथिली', isSupported: false, fallback: 'hi' },
-  { code: 'sat', name: 'Santali', nativeName: 'ᱥᱟᱱᱛᱟᱲᱤ', isSupported: false, fallback: 'hi' }
+  { code: 'ur', name: 'Urdu', nativeName: 'اُردُو', isSupported: true, fallback: 'hi' },
+  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', isSupported: true, fallback: 'hi' },
+  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', isSupported: true, fallback: 'hi' },
+  { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्', isSupported: true, fallback: 'hi' },
+  { code: 'ks', name: 'Kashmiri', nativeName: 'کٲшُر', isSupported: true, fallback: 'hi' },
+  { code: 'ne', name: 'Nepali', nativeName: 'नेपाली', isSupported: true, fallback: 'hi' },
+  { code: 'sd', name: 'Sindhi', nativeName: 'سنڌي', isSupported: true, fallback: 'hi' },
+  { code: 'kok', name: 'Konkani', nativeName: 'कोंकणी', isSupported: true, fallback: 'mr' },
+  { code: 'doi', name: 'Dogri', nativeName: 'डोगरी', isSupported: true, fallback: 'hi' },
+  { code: 'mni', name: 'Manipuri', nativeName: 'মৈতৈলোন', isSupported: true, fallback: 'en' },
+  { code: 'brx', name: 'Bodo', nativeName: 'बड़ो', isSupported: true, fallback: 'hi' },
+  { code: 'mai', name: 'Maithili', nativeName: 'मैथिली', isSupported: true, fallback: 'hi' },
+  { code: 'sat', name: 'Santali', nativeName: 'ᱥᱟᱱᱛᱟᱲᱤ', isSupported: true, fallback: 'hi' }
 ];
 
 interface LanguageGreetingModalProps {
@@ -117,7 +117,7 @@ export function LanguageGreetingModal({ onLanguageSelect }: LanguageGreetingModa
                 </h2>
                 
                 <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-                  Welcome to the MP-Citizen Development Portal. Please select your primary language to personalize your dashboard, feedback tools, and AI generation services.
+                  Welcome to the MP-CITIZEN DEVELOPMENT PORTAL. Please select your primary language to personalize your dashboard, feedback tools, and AI generation services.
                 </p>
               </div>
 

@@ -323,7 +323,7 @@ ${langInstruction}
 No other text beside the JSON object!`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json"
@@ -334,8 +334,12 @@ No other text beside the JSON object!`;
         const cleanedJson = textResponse.trim().replace(/^```json/i, "").replace(/```$/, "").trim();
         const parsedResult = JSON.parse(cleanedJson);
         return res.json({ success: true, analysis: parsedResult, isMock: false });
-      } catch (err) {
-        console.error("Gemini Suggestions Error, falling back:", err);
+      } catch (err: any) {
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429), falling back.");
+        } else {
+          console.error("Gemini Suggestions Error, falling back:", err?.message || err);
+        }
       }
     }
 
@@ -529,7 +533,7 @@ No other text beside the JSON object!`;
 ${JSON.stringify(fallbackResponse)}`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: translatePrompt,
           config: {
             responseMimeType: "application/json"
@@ -544,8 +548,12 @@ ${JSON.stringify(fallbackResponse)}`;
           analysis: parsedResult,
           isMock: true
         });
-      } catch (err) {
-        console.error("Failed to translate suggestions fallback:", err);
+      } catch (err: any) {
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429) during translation, falling back.");
+        } else {
+          console.error("Failed to translate suggestions fallback:", err?.message || err);
+        }
       }
     }
 
@@ -620,7 +628,7 @@ Citizen input (in language: "${language}"):
 Your output must be a valid JSON object matching the requested schema.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite", // Use flash-lite for better quota management
+          model: "gemini-2.5-flash", // Use flash-lite for better quota management
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -659,7 +667,11 @@ Your output must be a valid JSON object matching the requested schema.`;
           aiSummary: parsed.aiSummary || "Citizen suggestion processed by AI."
         };
       } catch (err: any) {
-        console.error("Gemini analysis failed:", err.message);
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429) during analysis, falling back.");
+        } else {
+          console.error("Gemini analysis failed:", err?.message || err);
+        }
         analyzedData = getMockAnalysis(originalText, language);
       }
     } else {
@@ -725,15 +737,19 @@ Your output must be a valid JSON object matching the requested schema.`;
       try {
         const cleanBase64 = audio.includes(",") ? audio.split(",")[1] : audio;
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: [
             {
-              inlineData: {
-                mimeType: mimeType || "audio/wav",
-                data: cleanBase64
-              }
-            },
-            `You are an expert multilingual speech transcriber for a citizen grievance web portal.
+              role: "user",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: (mimeType || "audio/wav").split(";")[0],
+                    data: cleanBase64
+                  }
+                },
+                {
+                  text: `You are an expert multilingual speech transcriber for a citizen grievance web portal.
              Please listen to this audio recorded voice note of a citizen and transcribe it exactly into the native script of the language they are speaking.
              
              IMPORTANT:
@@ -742,6 +758,7 @@ Your output must be a valid JSON object matching the requested schema.`;
              - If the speaker is speaking Tamil, write the transcription in Tamil script (தமிழ்).
              - If the speaker is speaking English, write the transcription in English.
              - Also, detect which language they are speaking (one of: 'ml', 'hi', 'ta', 'en') and translate the transcription into standard, clear English.
+             - If there is no speech, only background noise, or you cannot understand the audio at all, return empty strings for transcription and translation, and confidence 0. Do NOT hallucinate random text.
              
              Respond with a strictly valid JSON object matching the following structure:
              {
@@ -751,6 +768,9 @@ Your output must be a valid JSON object matching the requested schema.`;
                "confidence": 0.95
              }
              Do not include any Markdown blocks, comments, or backticks around the JSON.`
+                }
+              ]
+            }
           ],
           config: {
             responseMimeType: "application/json",
@@ -784,40 +804,19 @@ Your output must be a valid JSON object matching the requested schema.`;
         };
         console.log("Returning JSON:", result);
         return res.json(result);
-      } catch (err) {
-        console.error("Gemini audio transcription failed, falling back to mock:", err);
+      } catch (err: any) {
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429) during audio transcription, falling back to mock.");
+        } else {
+          console.error("Gemini audio transcription failed, falling back to mock:", err?.message || err);
+        }
       }
     }
 
-    // High quality mock fallback
-    let transcription = "";
-    let translation = "";
-    const activeLang = language || "en";
+    
+    // Return a clear error instead of misleading hardcoded text
+    return res.status(429).json({ error: "AI Transcription failed due to quota limits. Please type your grievance." });
 
-    if (activeLang === "ml") {
-      transcription = "മെഡിക്കൽ കോളേജ് കാമ്പസിൽ പുതിയ ശുദ്ധജല കിയോസ്കുകൾ അടിയന്തിരമായി സ്ഥാപിക്കണമെന്ന് അഭ്യർത്ഥിക്കുന്നു.";
-      translation = "We request that new clean drinking water kiosks be urgently installed in the Medical College campus.";
-    } else if (activeLang === "hi") {
-      transcription = "नेमम प्राथमिक स्वास्थ्य केंद्र में मातृत्व वार्ड का विस्तार आवश्यक है। रोगियों की संख्या बढ़ रही है।";
-      translation = "Expansion of the maternity ward is necessary at the Nemam Primary Health Centre. The number of patients is increasing.";
-    } else if (activeLang === "ta") {
-      transcription = "கோவளம் கடற்கரையில் புதிய வடிகால் குழாய் அமைக்க பொதுமக்கள் கோரிக்கை விடுக்கின்றனர்.";
-      translation = "The public is demanding the installation of a new drainage pipeline at Kovalam beach.";
-    } else {
-      transcription = "We urgently request pedestrian crossing systems and solar streetlights near Kazhakkoottam main road lanes.";
-      translation = "We urgently request pedestrian crossing systems and solar streetlights near Kazhakkoottam main road lanes.";
-    }
-
-    const mockResult = {
-      success: true,
-      transcription,
-      translation,
-      detectedLanguage: activeLang,
-      confidence: 0.85,
-      isMock: true
-    };
-    console.log("Returning Mock JSON:", mockResult);
-    res.json(mockResult);
   });
 
 
@@ -877,7 +876,7 @@ Key Requirements for the Letter:
 Return as a JSON object matching the requested schema.`;
 
         const requestConfig = {
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: prompt,
           config: { 
             responseMimeType: "application/json",
@@ -921,7 +920,7 @@ Return as a JSON object matching the requested schema.`;
         try {
           response = await ai.models.generateContent(requestConfig);
         } catch (err: any) {
-          const isRetryable = err?.status === 503 || err?.error?.code === 503 || err?.status === 429 || err?.error?.code === 429;
+          const isRetryable = err?.status === 503 || err?.error?.code === 503;
           if (isRetryable) {
             console.warn(`Gemini error ${err?.status || err?.error?.code}, retrying once...`);
             await new Promise(resolve => setTimeout(resolve, 3000));
@@ -960,7 +959,11 @@ Return as a JSON object matching the requested schema.`;
           return res.json({ grievance: fullGrievance });
         }
       } catch (err: any) {
-        console.error("Gemini grievance generation failed:", err.message);
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429) during grievance generation, falling back.");
+        } else {
+          console.error("Gemini grievance generation failed:", err?.message || err);
+        }
       }
     }
     
@@ -1029,13 +1032,17 @@ Your report MUST include:
 Format nicely using clear markdown headings and paragraphs, with a very respectful, professional, and authoritative bureaucratic tone. Do not include external links or HTML boilerplate. Use clear, neat formatting.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: prompt,
         });
 
         return res.json({ report: response.text });
-      } catch (err) {
-        console.error("Gemini report generation failed:", err);
+      } catch (err: any) {
+        if (err?.status === 429 || err?.error?.code === 429) {
+          console.warn("Gemini Quota Exceeded (429) during report generation, falling back.");
+        } else {
+          console.error("Gemini report generation failed:", err?.message || err);
+        }
       }
     }
 
@@ -1180,13 +1187,17 @@ Sincerely,
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: promptParts }],
       });
 
       res.json({ proposal: response.text });
-    } catch (err) {
-      console.error("Proposal generation failed:", err);
+    } catch (err: any) {
+      if (err?.status === 429 || err?.error?.code === 429) {
+        console.warn("Gemini Quota Exceeded (429) during proposal generation, falling back.");
+        return res.json({ proposal: `**MOCK PROPOSAL (API Quota Exceeded)**\n\n# Official Grievance Submission\n\n**Category:** ${req.body.category || 'General'}\n\n**Description:**\n${req.body.description}\n\n**Location:**\n${req.body.location || 'Not Specified'}\n\nThis is a mock proposal generated because the AI API quota was exceeded. Please try again later.` });
+      }
+      console.error("Proposal generation failed:", err?.message || err);
       res.status(500).json({ error: "Failed to generate proposal" });
     }
   });

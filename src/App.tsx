@@ -10,7 +10,11 @@ import { GrievanceSentimentRadar } from './components/GrievanceSentimentRadar';
 import { CitizenFeed } from './components/CitizenFeed';
 import { INDIAN_STATES_CITIES, ALL_INDIAN_STATES } from './seedData';
 import { AuthScreen } from './components/AuthScreen';
+import { LoadingScreen } from './components/LoadingScreen';
+import { Footer } from './components/Footer';
 import { LanguageGreetingModal, ALL_INDIAN_LANGUAGES } from './components/LanguageGreetingModal';
+import { ShootingStars } from './components/ShootingStars';
+import { PointStars } from './components/PointStars';
 import { 
   Languages, 
   User, 
@@ -69,6 +73,15 @@ export default function App() {
 }
 
 function AppContent() {
+  const [isAppLoading, setIsAppLoading] = useState(true);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [lang, setLang] = useState<string>('en');
   const [showGreeting, setShowGreeting] = useState<boolean>(false);
   const [selectedState, setSelectedState] = useState<string>('Kerala');
@@ -307,15 +320,15 @@ function AppContent() {
           
           const responseText = await res.text();
           if (!res.ok) {
-            console.error("Server error response:", responseText);
-            throw new Error(`Server responded with ${res.status}: ${responseText}`);
+            console.warn("Server error response:", responseText);
+            throw new Error(`Server responded with ${res.status}`);
           }
           
           let data;
           try {
             data = JSON.parse(responseText);
           } catch (e) {
-            console.error("Failed to parse JSON response:", responseText);
+            console.warn("Failed to parse JSON response:", responseText);
             throw new Error("Invalid JSON response from server");
           }
           
@@ -328,20 +341,22 @@ function AppContent() {
             throw new Error(data.error || "Failed to transcribe");
           }
         } catch (err) {
-          console.error("Transcription API error:", err);
-          setFormVoiceDesc(getFallbackTextForLang(lang));
+          console.warn("Transcription API error:", err);
+          setFormVoiceDesc('Transcription failed. Please type your grievance or try again.');
         } finally {
           setIsTranscribing(false);
         }
       };
     } catch (err) {
       console.error("Error reading audio blob:", err);
-      setFormVoiceDesc(getFallbackTextForLang(lang));
+      setFormVoiceDesc('Transcription failed. Please type your grievance or try again.');
       setIsTranscribing(false);
     }
   };
 
   // Rich audio recording and playbacks for voice suggestions
+  const recognitionRef = React.useRef<any>(null);
+
   const startRecording = async () => {
     setAudioUrl(null);
     setIsAudioPlaying(false);
@@ -359,6 +374,42 @@ function AppContent() {
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
+        // Setup SpeechRecognition
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          try {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            
+            let recognitionLang = 'en-US';
+            if (lang === 'ml') recognitionLang = 'ml-IN';
+            if (lang === 'hi') recognitionLang = 'hi-IN';
+            if (lang === 'ta') recognitionLang = 'ta-IN';
+            // Provide auto-detection fallback by not setting lang if not explicit, but we have explicit lang.
+            recognition.lang = recognitionLang;
+            
+            setFormVoiceDesc(''); // clear existing
+
+            recognition.onresult = (event: any) => {
+              let finalTranscript = '';
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                  finalTranscript += event.results[i][0].transcript;
+                }
+              }
+              if (finalTranscript) {
+                setFormVoiceDesc((prev) => (prev + ' ' + finalTranscript).trim());
+              }
+            };
+            
+            recognition.start();
+            recognitionRef.current = recognition;
+          } catch (err) {
+            console.warn("Speech recognition failed to start", err);
+          }
+        }
+
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
@@ -366,12 +417,23 @@ function AppContent() {
         };
 
         mediaRecorder.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          const audioType = mediaRecorder.mimeType || 'audio/webm';
+          const audioBlob = new Blob(audioChunksRef.current, { type: audioType });
           const url = URL.createObjectURL(audioBlob);
           setAudioUrl(url);
           // Stop all stream tracks to release the mic
           stream.getTracks().forEach(track => track.stop());
-          transcribeAudioBlob(audioBlob);
+          
+          setFormVoiceDesc(prev => {
+            if (!prev || !prev.trim()) {
+              // Try backend transcription ONLY if native failed
+              transcribeAudioBlob(audioBlob);
+              return prev;
+            } else {
+              setIsTranscribing(false);
+              return prev;
+            }
+          });
         };
 
         mediaRecorder.start();
@@ -395,6 +457,11 @@ function AppContent() {
   };
 
   const stopRecording = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+      recognitionRef.current = null;
+    }
+    
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       clearInterval(timerRef.current);
@@ -409,7 +476,7 @@ function AppContent() {
       setFormInputType('voice');
       // Create a simulated pleasant play URL
       setAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-      setFormVoiceDesc(getFallbackTextForLang(lang));
+      setFormVoiceDesc('Transcription failed. Please type your grievance or try again.');
     }
   };
 
@@ -784,6 +851,10 @@ function AppContent() {
   const actionedCount = submissions.filter(s => s.status === 'Actioned' || s.status === 'Approved').length;
   const estimatedImpactSum = submissions.reduce((sum, s) => sum + s.impactCount, 0);
 
+  if (isAppLoading) {
+    return <LoadingScreen />;
+  }
+
   if (showGreeting) {
     return (
       <LanguageGreetingModal 
@@ -798,10 +869,14 @@ function AppContent() {
   if (!currentUser) {
     return (
       <AuthScreen 
-        onAuthSuccess={(user) => { 
-          setCurrentUser(user); 
+        onAuthSuccess={(user) => {
+          setIsAppLoading(true);
+          setCurrentUser(user);
           setFormName(`${user.firstName} ${user.lastName}`);
           setFormPhone(user.phone || '');
+          setTimeout(() => {
+            setIsAppLoading(false);
+          }, 3000);
         }}
         language={lang}
       />
@@ -810,6 +885,13 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#070b19] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black relative overflow-x-hidden cyber-grid">
+      <PointStars />
+      <ShootingStars />
+      
+      {/* Colorful mesh backgrounds */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-fuchsia-900/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-indigo-900/10 rounded-full blur-[160px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-teal-900/10 rounded-full blur-[180px] pointer-events-none -z-10" />
       
       {/* 0. SLIDE-OUT LEFT NAVIGATION DRAWER */}
       <AnimatePresence>
@@ -835,10 +917,10 @@ function AppContent() {
               <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center font-extrabold text-xs text-cyan-400 font-mono tracking-wider">
-                    CP
+                    CDP
                   </div>
-                  <span className="text-sm font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
-                    CITIZEN PORTAL
+                  <span className="text-sm font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-400 bg-clip-text text-transparent">
+                    {t.title}
                   </span>
                 </div>
                 <button
@@ -919,7 +1001,7 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Dynamic Floating Marquee Bar */}
-      <div className="bg-gradient-to-r from-cyan-950/90 via-slate-950/90 to-blue-950/90 border-b border-cyan-800/30 text-[10px] text-cyan-400 font-mono py-1.5 px-4 overflow-hidden relative z-50 flex items-center shadow-md">
+      <div className="bg-gradient-to-r from-cyan-950/90 via-slate-950/90 to-blue-950/90 border-b border-cyan-800/30 text-[10px] text-cyan-400 font-mono py-1.5 px-4 overflow-hidden relative z-30 flex items-center shadow-md">
         <div className="shrink-0 bg-cyan-950 px-2 py-0.5 border border-cyan-500/30 rounded text-[9px] font-bold uppercase mr-3 flex items-center gap-1.5 animate-pulse">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
           <span>{t.liveFeedLabel || "LIVE SYSTEM FEED"}</span>
@@ -959,12 +1041,10 @@ function AppContent() {
 
               <div className="min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent truncate">
+                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black font-display text-slate-100 tracking-wider uppercase bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-400 bg-clip-text text-transparent truncate">
                     {t.title}
                   </h1>
-                  <span className="self-start sm:self-auto text-[8px] bg-cyan-950/50 text-cyan-400 px-2 py-0.5 border border-cyan-500/30 rounded-full font-mono font-bold uppercase tracking-wider animate-pulse whitespace-nowrap">
-                    AI CORE OPERATIONAL
-                  </span>
+                  
                 </div>
               </div>
             </div>
@@ -974,7 +1054,7 @@ function AppContent() {
               <button
                 id="user-profile-badge-btn"
                 onClick={() => setShowProfileCard(!showProfileCard)}
-                className="flex items-center gap-2 bg-slate-900/60 hover:bg-slate-850/80 p-1.5 px-2.5 sm:px-3 border border-slate-800 rounded-xl transition-all cursor-pointer shadow-md active:scale-95"
+                className="flex items-center gap-2 transition-all cursor-pointer active:scale-95 text-left"
               >
                 <div className="w-6 h-6 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-xs font-bold text-cyan-400">
                   {currentUser.firstName ? currentUser.firstName[0] : ''}{currentUser.lastName ? currentUser.lastName[0] : ''}
@@ -2127,10 +2207,7 @@ function AppContent() {
         </AnimatePresence>
       </main>
 
-      {/* FOOTER COGNIZANCE */}
-      <footer className="bg-slate-950 border-t border-slate-850 py-8 px-4 mt-12 text-center text-xs text-slate-500 font-sans space-y-2">
-        <p>© 2026 Office of the Member of Parliament. All legislative datasets secured by AI clearance protocols.</p>
-      </footer>
+      <Footer />
 
     </div>
   );
